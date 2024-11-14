@@ -2,7 +2,8 @@ const admin = require('firebase-admin');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 
-const serviceAccount = require('../../firebase-service-secret.json');
+const serviceAccount = require('../../firebase-secret');
+// const serviceAccount = require('../../firebase-service-secret.json');
 const {authService} = require('../services');
 
 admin.initializeApp({
@@ -10,6 +11,7 @@ admin.initializeApp({
 });
 
 const firebaseAuth = (allowUserType = 'All') => async (req, res, next) => {
+  // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     const token = req.headers?.authorization?.split(' ')[1];
     console.log(token);

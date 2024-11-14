@@ -8,6 +8,29 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+      required: true,
+    },
+    dob: {
+      type: Date,
+      default: null,
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female'],
+      default: null,
+    },
+    weight: {
+      type: Number,
+      default: null,
+    },
+    height: {
+      type: Number,
+      default: null,
+    },
     phone: {
       type: String,
       trim: true,
@@ -25,10 +48,6 @@ const userSchema = new mongoose.Schema(
       },
       default: null,
     },
-    dob: {
-      type: Date,
-      default: null,
-    },
     firebaseUid: {
       type: String,
       required: true,
@@ -42,12 +61,6 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-  },
-  {timestamps: true}
-);
-
-const clientSchema = new mongoose.Schema(
-  {
     isBlocked: {
       type: Boolean,
       default: false,
@@ -57,27 +70,14 @@ const clientSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    preferences: {
-      type: {
-        notificationEnabled: Boolean,
-        locationShared: Boolean,
-      },
-      default: {
-        notificationEnabled: false,
-        locationShared: false,
-      },
-    },
   },
   {timestamps: true}
 );
 
 userSchema.plugin(paginate);
-clientSchema.plugin(paginate);
 
 const User = mongoose.model('User', userSchema);
-const Client = User.discriminator('Client', clientSchema);
 
 module.exports = {
   User,
-  Client,
 };

@@ -1,8 +1,10 @@
-const {User, Client} = require('./user.model');
+const {User} = require('./user.model');
 const {AppNotification} = require('./appNotification.model');
+const {StrengthExercise, CustomStrengthExercise} = require('./strength.exercise.model');
 
 module.exports = {
   User,
-  Client,
   AppNotification,
+  StrengthExercise,
+  CustomStrengthExercise,
 };
