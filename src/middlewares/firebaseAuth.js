@@ -16,23 +16,20 @@ const firebaseAuth = (allowUserType = 'All') => async (req, res, next) => {
   // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     const token = req.headers?.authorization?.split(' ')[1];
-    console.log(token);
     // token not found
     if (!token) {
       reject(new ApiError(httpStatus.BAD_REQUEST, 'Please Authenticate!'));
     }
     try {
       const payload = await admin.auth().verifyIdToken(token, true);
-      console.log(payload);
       const user = await authService.getUserByFirebaseUId(payload.uid);
       if (!user) {
-        console.log(req.path);
         if (['/register'].includes(req.path) || req.path.includes('secretSignup')) {
           req.newUser = payload;
           req.routeType = allowUserType;
         } else reject(new ApiError(httpStatus.NOT_FOUND, "User doesn't exist. Please create account"));
       } else {
-        if (!allowUserType.split(',').includes(user.__t) && allowUserType !== 'All') {
+        if (!allowUserType.split(',').includes(user.role) && allowUserType !== 'All') {
           reject(new ApiError(httpStatus.FORBIDDEN, "Sorry, but you can't access this"));
         }
         if (user.isBlocked) {

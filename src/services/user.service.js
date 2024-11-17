@@ -39,9 +39,9 @@ async function updateUserById(id, newDetails) {
     updates = {...updates, profilePic};
   }
 
-  if (user.__t === 'Client') {
-    return await Client.findByIdAndUpdate(id, updates, {new: true});
-  } else if (user.__t === 'Admin') {
+  if (user.role === 'user') {
+    return await User.findByIdAndUpdate(id, updates, {new: true});
+  } else if (user.role === 'admin') {
     return await User.findByIdAndUpdate(id, updates, {new: true});
   }
 }

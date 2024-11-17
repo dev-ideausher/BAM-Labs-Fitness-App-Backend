@@ -20,8 +20,10 @@ const registerUser = catchAsync(async (req, res) => {
     // } else if (!req.newUser.email_verified) {
     //   res.status(401).send({ message: "Email not verified" });
   } else {
+    const obj = await createNewUserObject(req.newUser);
+
     const userObj = {
-      ...createNewUserObject(req.newUser),
+      ...obj,
       ...req.body,
       role: req.routeType,
     };

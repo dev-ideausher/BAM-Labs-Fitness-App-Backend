@@ -13,9 +13,8 @@ router.post('/login', firebaseAuth('All'), authController.loginUser);
 
 router.post(
   '/register',
-  firebaseAuth('Client'),
+  firebaseAuth('user'),
   fileUploadService.multerUpload.single('profilePic'),
-  validate(authValidation.register),
   authController.registerUser
 );
 
