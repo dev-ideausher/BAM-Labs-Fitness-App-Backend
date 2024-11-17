@@ -21,7 +21,7 @@ router.post(
 router.post(
   '/admin-secretSignup',
   validate(authValidation.register),
-  firebaseAuth('Admin'),
+  firebaseAuth('admin'),
   authController.registerUser
 );
 

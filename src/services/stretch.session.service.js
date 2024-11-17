@@ -1,5 +1,6 @@
 const {StretchSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
+const {getWeeklySessionsMap, getMonthlySessionsMap} = require('../utils/getMaps');
 
 const logStrechSession = async stretchSession => {
   return await StretchSession.create(stretchSession);
@@ -14,11 +15,11 @@ const getSessionById = async id => {
   return await StretchSession.findById(id);
 };
 
-const getWeeklySessionsMap = async (userId, exerciseId) => {
+const getWeeklyStretchMap = async (userId, exerciseId) => {
   return await getWeeklySessionsMap(StretchSession, {userId, exerciseId});
 };
 
-const getMonthlySessionsMap = async (userId, exerciseId, year, month) => {
+const getMonthlyStretchMap = async (userId, exerciseId, year, month) => {
   return await getMonthlySessionsMap(StretchSession, {userId, exerciseId}, year, month);
 };
 
@@ -26,6 +27,6 @@ module.exports = {
   logStrechSession,
   getAllSessions,
   getSessionById,
-  getWeeklySessionsMap,
-  getMonthlySessionsMap,
+  getWeeklyStretchMap,
+  getMonthlyStretchMap,
 };

@@ -1,5 +1,6 @@
 const {CardioSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
+const {getWeeklySessionsMap, getMonthlySessionsMap} = require('../utils/getMaps');
 
 const logCardioSession = async cardioSession => {
   return await CardioSession.create(cardioSession);
@@ -14,18 +15,18 @@ const getSessionById = async id => {
   return await CardioSession.findById(id);
 };
 
-const getWeeklySessionsMap = async (userId, exerciseId) => {
-  return await getWeeklySessionsMap(CardioSession, {userId, exerciseId});
+const getWeeklyCardioSessionsMap = async userId => {
+  return await getWeeklySessionsMap(CardioSession, {userId});
 };
 
-const getMonthlySessionsMap = async (userId, exerciseId, year, month) => {
-  return await getMonthlySessionsMap(CardioSession, {userId, exerciseId}, year, month);
+const getMonthlyCardioSessionsMap = async (userId, year, month) => {
+  return await getMonthlySessionsMap(CardioSession, {userId}, year, month);
 };
 
 module.exports = {
   logCardioSession,
   getAllSessions,
   getSessionById,
-  getWeeklySessionsMap,
-  getMonthlySessionsMap,
+  getWeeklyCardioSessionsMap,
+  getMonthlyCardioSessionsMap,
 };

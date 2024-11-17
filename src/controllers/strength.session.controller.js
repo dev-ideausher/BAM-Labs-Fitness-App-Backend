@@ -1,9 +1,13 @@
-const {strengthSessionService, strengthBestSessionService} = require('../services');
+const {strengthSessionService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 
 const logSession = catchAsync(async (req, res) => {
-  const session = await strengthSessionService.logStrengthSession(req.body);
-  const data = await strengthBestSessionService.checkAndLogBestSession(session);
+  const session = await strengthSessionService.logStrengthSession({...req.body, userId: req.user._id});
+  const data = await strengthSessionService.checkAndLogBestSession({
+    ...session,
+    sessionId: session._id,
+    userId: req.user._id,
+  });
   res.status(200).json({
     status: true,
     message: 'Session logged successfully',
@@ -22,11 +26,8 @@ const getMySessions = catchAsync(async (req, res) => {
 });
 
 const getLastAndBestSession = catchAsync(async (req, res) => {
-  const lastSession = await strengthSessionService.getLastSession(req.params.userId, req.params.exerciseId);
-  const bestSession = await strengthBestSessionService.getUserExerciseBestSession(
-    req.params.userId,
-    req.params.exerciseId
-  );
+  const lastSession = await strengthSessionService.getLastSession(req.user._id, req.params.exerciseId);
+  const bestSession = await strengthSessionService.getUserExerciseBestSession(req.user._id, req.params.exerciseId);
   res.status(200).json({
     status: true,
     message: 'Last and best session fetched successfully',

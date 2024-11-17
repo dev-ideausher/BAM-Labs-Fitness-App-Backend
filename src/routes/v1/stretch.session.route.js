@@ -6,10 +6,10 @@ const {stretchSessionController} = require('../../controllers');
 
 const router = express.Router();
 
-router.post('/', firebaseAuth('User'), stretchSessionController.logSession);
+router.post('/', firebaseAuth('user'), stretchSessionController.logSession);
 
-router.get('/', firebaseAuth('User'), stretchSessionController.getMySessions);
+router.get('/', firebaseAuth('user'), stretchSessionController.getMySessions);
 
-router.get('/maps', firebaseAuth('User'), stretchSessionController.getStretchMaps);
+router.get('/maps', firebaseAuth('user'), stretchSessionController.getStretchMaps);
 
 module.exports = router;

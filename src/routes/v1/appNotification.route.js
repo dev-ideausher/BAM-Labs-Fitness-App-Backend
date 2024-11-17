@@ -10,7 +10,7 @@ const router = express.Router();
 // Send notification to a group of users
 router.post(
   '/notify-people',
-  firebaseAuth('Admin'),
+  firebaseAuth('user'),
   validate(appNotificationValidation.notifyPeople),
   appNotificationController.createAppNotification
 );
@@ -18,7 +18,7 @@ router.post(
 // Send notification to an individual user
 router.post(
   '/notify',
-  firebaseAuth('Admin'),
+  firebaseAuth('user'),
   validate(appNotificationValidation.notify),
   appNotificationController.createAppNotification
 );
@@ -26,7 +26,7 @@ router.post(
 // Get notifications of a user
 router.get(
   '/',
-  firebaseAuth('All'),
+  firebaseAuth('user'),
   validate(appNotificationValidation.getAppNotifications),
   appNotificationController.getAppNotifications
 );
@@ -34,7 +34,7 @@ router.get(
 // Get notifications sent by admin
 router.get(
   '/sent-by-admin',
-  firebaseAuth('Admin'),
+  firebaseAuth('user'),
   validate(appNotificationValidation.getAppNotificationsSentByAdmin),
   appNotificationController.getAppNotificationsSentByAdmin
 );
@@ -45,7 +45,7 @@ router.patch('/seen', firebaseAuth('All'), appNotificationController.updateAppNo
 // Delete a notification
 router.delete(
   '/:id',
-  firebaseAuth('Admin'),
+  firebaseAuth('user'),
   validate(appNotificationValidation.deleteAppNotification),
   appNotificationController.deleteAppNotification
 );

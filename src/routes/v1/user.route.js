@@ -27,7 +27,7 @@ router.patch(
 );
 
 // for deleting a user
-router.delete('/:userId', validate(userValidation.deleteUser), firebaseAuth('Admin'), userController.deleteUser);
+router.delete('/:userId', validate(userValidation.deleteUser), firebaseAuth('admin'), userController.deleteUser);
 
 // to soft delete a user
 router.post('/delete/:userId', validate(userValidation.deleteUser), firebaseAuth('All'), userController.softDeleteUser);

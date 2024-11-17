@@ -1,21 +1,24 @@
 const mongoose = require('mongoose');
 const {paginate} = require('./plugins/paginate');
 
-const cardioSessionSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+const cardioSessionSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    dateTime: {
+      type: Date,
+      required: true,
+    },
+    sessionTime: {
+      type: Number,
+      required: true,
+    },
   },
-  dateTime: {
-    type: Date,
-    required: true,
-  },
-  sessionTime: {
-    type: Number,
-    required: true,
-  },
-});
+  {timestamps: true}
+);
 
 cardioSessionSchema.plugin(paginate);
 

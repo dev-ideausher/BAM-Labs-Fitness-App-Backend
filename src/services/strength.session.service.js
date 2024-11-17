@@ -20,14 +20,18 @@ const getLastSession = async (userId, exerciseId) => {
 };
 
 const checkAndLogBestSession = async session => {
-  const {userId, exerciseId, totalReps} = session;
+  const {userId, sessionId} = session;
+  const {exerciseId, totalReps} = session._doc;
+
   const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1});
-  if (!bestSession || totalReps > bestSession.totalReps) {
+  const bestSessionData = await StrengthSession.findById(bestSession.sessionId);
+
+  if (!bestSession || totalReps > bestSessionData.totalReps) {
     if (bestSession) {
-      const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, session);
+      const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId});
       return {data, updated: true};
     } else {
-      const data = await StrengthBestSession.create(session);
+      const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
       return {data, updated: true};
     }
   } else {

@@ -2,7 +2,7 @@ const {cardioSessionService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 
 const logSession = catchAsync(async (req, res) => {
-  const session = await cardioSessionService.logCardioSession(req.body);
+  const session = await cardioSessionService.logCardioSession({...req.body, userId: req.user._id});
   res.status(200).json({
     status: true,
     message: 'Session logged successfully',
@@ -20,10 +20,9 @@ const getMySessions = catchAsync(async (req, res) => {
 });
 
 const getCardioMaps = catchAsync(async (req, res) => {
-  const weeklyMap = await cardioSessionService.getWeeklyCardioMap(req.user._id, req.params.exerciseId);
-  const monthlyMap = await cardioSessionService.getMonthlyCardioMap(
+  const weeklyMap = await cardioSessionService.getWeeklyCardioSessionsMap(req.user._id);
+  const monthlyMap = await cardioSessionService.getMonthlyCardioSessionsMap(
     req.user._id,
-    req.params.exerciseId,
     req.query.year,
     req.query.month
   );

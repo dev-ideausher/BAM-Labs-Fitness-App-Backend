@@ -6,10 +6,10 @@ const {cardioSessionController} = require('../../controllers');
 
 const router = express.Router();
 
-router.post('/', firebaseAuth('User'), cardioSessionController.logSession);
+router.post('/', firebaseAuth('user'), cardioSessionController.logSession);
 
-router.get('/', firebaseAuth('User'), cardioSessionController.getMySessions);
+router.get('/', firebaseAuth('user'), cardioSessionController.getMySessions);
 
-router.get('/maps', firebaseAuth('User'), cardioSessionController.getCardioMaps);
+router.get('/maps', firebaseAuth('user'), cardioSessionController.getCardioMaps);
 
 module.exports = router;
