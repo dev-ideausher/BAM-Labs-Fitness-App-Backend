@@ -1,7 +1,7 @@
 const express = require('express');
 
 // const validate = require('../../middlewares/validate');
-const firebaseAuth = require('../../middlewares/firebaseAuth');
+const {firebaseAuth} = require('../../middlewares/firebaseAuth');
 const {strengthExerciseController} = require('../../controllers');
 
 const router = express.Router();

@@ -1,7 +1,7 @@
 const express = require('express');
 
 const validate = require('../../middlewares/validate');
-const firebaseAuth = require('../../middlewares/firebaseAuth');
+const {firebaseAuth, generateToken} = require('../../middlewares/firebaseAuth');
 const {authValidation} = require('../../validations');
 const {fileUploadService} = require('../../microservices');
 
@@ -25,5 +25,7 @@ router.post(
   firebaseAuth('Admin'),
   authController.registerUser
 );
+
+router.post('/generate-token/:uid', generateToken);
 
 module.exports = router;

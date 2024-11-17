@@ -4,6 +4,7 @@ const ApiError = require('../utils/ApiError');
 
 const serviceAccount = require('../../firebase-secret');
 // const serviceAccount = require('../../firebase-service-secret.json');
+const {getAuth, signInWithCustomToken} = require('firebase/auth');
 const {authService} = require('../services');
 
 admin.initializeApp({
@@ -55,4 +56,23 @@ const firebaseAuth = (allowUserType = 'All') => async (req, res, next) => {
     .catch(err => next(err));
 };
 
-module.exports = firebaseAuth;
+//Only for backend developer to generate token to call APIS
+// eslint-disable-next-line no-unused-vars
+const generateToken = async (req, res, next) => {
+  try {
+    const token = await admin.auth().createCustomToken(req.params.uid);
+    const user = await signInWithCustomToken(getAuth(), token);
+    const idToken = user._tokenResponse.idToken;
+    return res.status(200).json({
+      status: true,
+      token: idToken,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      msg: err.message,
+    });
+  }
+};
+
+module.exports = {firebaseAuth, generateToken};
