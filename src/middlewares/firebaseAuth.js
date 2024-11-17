@@ -6,6 +6,7 @@ const serviceAccount = require('../../firebase-secret');
 // const serviceAccount = require('../../firebase-service-secret.json');
 const {getAuth, signInWithCustomToken} = require('firebase/auth');
 const {authService} = require('../services');
+require('../../firebase-web-config');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
