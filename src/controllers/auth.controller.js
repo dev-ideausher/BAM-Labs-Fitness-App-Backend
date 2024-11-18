@@ -4,7 +4,10 @@ const catchAsync = require('../utils/catchAsync');
 const createNewUserObject = newUser => ({
   email: newUser.email,
   firebaseUid: newUser.uid,
-  profilePic: newUser.picture,
+  profilePic: {
+    key: newUser.picture,
+    url: newUser.picture,
+  },
   isEmailVerified: newUser.isEmailVerified,
   firebaseSignInProvider: newUser.firebase.sign_in_provider,
 });
@@ -20,7 +23,7 @@ const registerUser = catchAsync(async (req, res) => {
     // } else if (!req.newUser.email_verified) {
     //   res.status(401).send({ message: "Email not verified" });
   } else {
-    const obj = await createNewUserObject(req.newUser);
+    const obj = createNewUserObject(req.newUser);
 
     const userObj = {
       ...obj,
