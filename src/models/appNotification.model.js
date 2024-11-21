@@ -27,7 +27,6 @@ const appNotificationSchema = new mongoose.Schema(
       default: null,
       enum: [...Object.values(userTypes), null],
     },
-    // Specify targetUser for individual notification
     targetUser: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'User',
