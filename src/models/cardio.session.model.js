@@ -12,10 +12,6 @@ const cardioSessionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    sessionTime: {
-      type: Number,
-      required: true,
-    },
   },
   {timestamps: true}
 );
