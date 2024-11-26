@@ -20,8 +20,8 @@ const getMySessions = catchAsync(async (req, res) => {
 });
 
 const getStretchMaps = catchAsync(async (req, res) => {
-  const weeklyMap = await stretchSessionService.getWeeklySessionsMap(req.user._id);
-  const monthlyMap = await stretchSessionService.getMonthlySessionsMap(req.user._id, req.query.year, req.query.month);
+  const weeklyMap = await stretchSessionService.getWeeklyStretchMap(req.user._id);
+  const monthlyMap = await stretchSessionService.getMonthlyStretchMap(req.user._id, req.query.year, req.query.month);
   res.status(200).json({
     status: true,
     message: 'Stretch maps fetched successfully',
