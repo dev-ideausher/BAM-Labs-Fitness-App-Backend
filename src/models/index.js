@@ -4,6 +4,7 @@ const {StrengthExercise, CustomStrengthExercise} = require('./strength.exercise.
 const {StrengthSession, StrengthBestSession} = require('./strength.session.model');
 const {CardioSession} = require('./cardio.session.model');
 const {StretchSession} = require('./stretch.session.model');
+const {Habit, CustomHabit} = require('./habit.model');
 
 module.exports = {
   User,
@@ -14,4 +15,6 @@ module.exports = {
   StrengthBestSession,
   CardioSession,
   StretchSession,
+  Habit,
+  CustomHabit,
 };
