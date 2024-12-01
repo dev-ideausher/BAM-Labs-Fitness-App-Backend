@@ -58,7 +58,7 @@ const validateHabitData = reqBody => {
   }
 
   // Validate numberOfTimes and customTimes for consistency
-  if (customTimes.length !== 0 || (customTimes && customTimes.length !== numberOfTimes)) {
+  if (customTimes && customTimes.length !== numberOfTimes) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'customTimes length must be equal to numberOfTimes.');
   }
 
@@ -71,8 +71,8 @@ const validateHabitData = reqBody => {
 };
 
 const createUserHabit = catchAsync(async (req, res) => {
-  const validHabit = await validateHabitData(req.body);
-  const habit = await userHabitService.createUserHabit({userId: req.user._id, ...validHabit});
+  const validHabit = await validateHabitData({...req.body, userId: req.user._id});
+  const habit = await userHabitService.createUserHabit(validHabit);
   res.status(200).json({
     status: true,
     message: 'User habit created successfully',
