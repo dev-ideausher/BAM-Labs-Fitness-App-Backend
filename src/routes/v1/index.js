@@ -8,6 +8,7 @@ const strengthSessionRoute = require('./strength.session.route');
 const cardioSessionRoute = require('./cardio.session.route');
 const stretchSessionRoute = require('./stretch.session.route');
 const habitRoute = require('./habit.route');
+const userHabitRoute = require('./user.habit.route');
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use('/strength-sessions', strengthSessionRoute);
 router.use('/cardio-sessions', cardioSessionRoute);
 router.use('/stretch-sessions', stretchSessionRoute);
 router.use('/habits', habitRoute);
+router.use('/user-habits', userHabitRoute);
 
 module.exports = router;
