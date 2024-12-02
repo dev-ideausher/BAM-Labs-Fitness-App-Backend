@@ -19,8 +19,8 @@ const getWeeklyStretchMap = async (userId, exerciseId) => {
   return await getWeeklySessionsMap(StretchSession, {userId, exerciseId});
 };
 
-const getMonthlyStretchMap = async (userId, exerciseId, year, month) => {
-  return await getMonthlySessionsMap(StretchSession, {userId, exerciseId}, year, month);
+const getMonthlyStretchMap = async (userId, year, month) => {
+  return await getMonthlySessionsMap(StretchSession, {userId}, year, month);
 };
 
 module.exports = {
