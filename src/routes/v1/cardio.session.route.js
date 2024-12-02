@@ -12,4 +12,6 @@ router.get('/', firebaseAuth('user'), cardioSessionController.getMySessions);
 
 router.get('/maps', firebaseAuth('user'), cardioSessionController.getCardioMaps);
 
+router.get('/maps/dated', firebaseAuth('user'), cardioSessionController.getDatedCardioMaps);
+
 module.exports = router;

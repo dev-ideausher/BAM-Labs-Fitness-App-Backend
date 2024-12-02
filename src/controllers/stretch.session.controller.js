@@ -30,8 +30,20 @@ const getStretchMaps = catchAsync(async (req, res) => {
   });
 });
 
+const getDatedStretchMaps = catchAsync(async (req, res) => {
+  const startDate = new Date(req.query.startDate);
+  const endDate = new Date(req.query.endDate);
+  const datedMap = await stretchSessionService.getDatedStretchMap(req.user._id, startDate, endDate);
+  res.status(200).json({
+    status: true,
+    message: 'Dated stretch map fetched successfully',
+    datedMap,
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
   getStretchMaps,
+  getDatedStretchMaps,
 };

@@ -71,7 +71,40 @@ const getMonthlySessionsMap = async (model, findQuery, year, month) => {
   return dateArray;
 };
 
+const getMapsByDate = async (model, findQuery, startDate, endDate) => {
+  const sessions = await model
+    .find({
+      ...findQuery,
+      dateTime: {$gte: startDate, $lte: endDate},
+    })
+    .sort({dateTime: 1});
+
+  const dateArray = [];
+  const days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+  for (let day = 0; day < days; day++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + day);
+    const dateString = date.toISOString().split('T')[0];
+    dateArray.push({
+      date: dateString,
+      sessionMarked: false,
+    });
+  }
+
+  sessions.forEach(session => {
+    const dateString = session.dateTime.toISOString().split('T')[0];
+    const dateObject = dateArray.find(item => item.date === dateString);
+    if (dateObject) {
+      dateObject.sessionMarked = true;
+    }
+  });
+
+  return dateArray;
+};
+
 module.exports = {
   getWeeklySessionsMap,
   getMonthlySessionsMap,
+  getMapsByDate,
 };

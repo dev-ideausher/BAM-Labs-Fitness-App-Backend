@@ -34,8 +34,20 @@ const getCardioMaps = catchAsync(async (req, res) => {
   });
 });
 
+const getDatedCardioMaps = catchAsync(async (req, res) => {
+  const startDate = new Date(req.query.startDate);
+  const endDate = new Date(req.query.endDate);
+  const datedMap = await cardioSessionService.getDatedCardioSessionsMap(req.user._id, startDate, endDate);
+  res.status(200).json({
+    status: true,
+    message: 'Dated cardio map fetched successfully',
+    datedMap,
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
   getCardioMaps,
+  getDatedCardioMaps,
 };
