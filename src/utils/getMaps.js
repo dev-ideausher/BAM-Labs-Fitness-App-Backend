@@ -12,7 +12,7 @@ const getWeeklySessionsMap = async (model, findQuery) => {
 
   const dateArray = [];
   // Generate date mappings for the last 7 days
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 7; i++) {
     const date = new Date(sevenDaysAgo);
     date.setDate(sevenDaysAgo.getDate() + i);
     const dateString = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD

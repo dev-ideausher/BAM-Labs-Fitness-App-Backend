@@ -12,6 +12,7 @@ const userHabitRoute = require('./user.habit.route');
 
 const router = express.Router();
 
+router.get('/status', (req, res) => res.send('OK! Server is up and running! 🚀 :)'));
 router.use('/auth', authRoute);
 router.use('/users', userRoute);
 router.use('/notifications', appNotificationRoute);
