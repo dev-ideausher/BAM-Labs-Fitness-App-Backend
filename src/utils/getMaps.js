@@ -72,10 +72,12 @@ const getMonthlySessionsMap = async (model, findQuery, year, month) => {
 };
 
 const getMapsByDate = async (model, findQuery, startDate, endDate) => {
+  const nextDay = new Date(endDate);
+  nextDay.setDate(endDate.getDate() + 1);
   const sessions = await model
     .find({
       ...findQuery,
-      dateTime: {$gte: startDate, $lte: endDate},
+      dateTime: {$gte: startDate, $lte: nextDay},
     })
     .sort({dateTime: 1});
 
