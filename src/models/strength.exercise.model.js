@@ -4,14 +4,14 @@ const {paginate} = require('./plugins/paginate');
 const strengthExerciseSchema = new mongoose.Schema(
   {
     primaryCategory: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PrimaryCategory',
       required: true,
-      trim: true,
     },
-    bodyPart: {
-      type: String,
+    targetedMuscle: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TargetedMuscle',
       required: true,
-      trim: true,
     },
     exerciseName: {
       type: String,

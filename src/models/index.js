@@ -6,10 +6,14 @@ const {CardioSession} = require('./cardio.session.model');
 const {StretchSession} = require('./stretch.session.model');
 const {Habit, CustomHabit} = require('./habit.model');
 const {UserHabit} = require('./user.habit.model');
+const {PrimaryCategory} = require('./primary.category,model');
+const {TargetedMuscle} = require('./targeted.muscles.model');
 
 module.exports = {
   User,
   AppNotification,
+  PrimaryCategory,
+  TargetedMuscle,
   StrengthExercise,
   CustomStrengthExercise,
   StrengthSession,

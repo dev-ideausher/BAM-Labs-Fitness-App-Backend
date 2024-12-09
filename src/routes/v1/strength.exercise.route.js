@@ -6,10 +6,10 @@ const {strengthExerciseController} = require('../../controllers');
 
 const router = express.Router();
 
-router.post('/', firebaseAuth('user'), strengthExerciseController.createExercise);
+router.post('/', firebaseAuth('admin'), strengthExerciseController.createExercise);
 
 router.post('/custom', firebaseAuth('user'), strengthExerciseController.createCustomExercise);
 
-router.get('/', firebaseAuth('user'), strengthExerciseController.getAllExercises);
+router.get('/', firebaseAuth('All'), strengthExerciseController.getAllExercises);
 
 module.exports = router;
