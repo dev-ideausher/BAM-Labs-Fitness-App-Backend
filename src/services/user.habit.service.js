@@ -6,7 +6,7 @@ const createUserHabit = async habit => {
 };
 
 const getUserHabit = async userHabitId => {
-  return await UserHabit.findById(userHabitId);
+  return await UserHabit.findById(userHabitId).populate('habitId');
 };
 
 const getUserHabits = async (userId, query, populate) => {
