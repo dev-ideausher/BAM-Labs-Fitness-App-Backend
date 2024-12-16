@@ -9,8 +9,8 @@ const getUserHabit = async userHabitId => {
   return await UserHabit.findById(userHabitId);
 };
 
-const getUserHabits = async (userId, query) => {
-  return await getAllData(UserHabit, {userId, ...query}, []);
+const getUserHabits = async (userId, query, populate) => {
+  return await getAllData(UserHabit, {userId, ...query}, populate);
 };
 
 const updateUserHabit = async (userHabitId, habit) => {

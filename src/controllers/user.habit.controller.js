@@ -93,7 +93,7 @@ const getUserHabit = catchAsync(async (req, res) => {
 });
 
 const getUserHabits = catchAsync(async (req, res) => {
-  const habits = await userHabitService.getUserHabits(req.user._id, req.query);
+  const habits = await userHabitService.getUserHabits(req.user._id, req.query, [{path: 'habitId'}]);
   res.status(200).json({
     status: true,
     message: 'User habits retrieved successfully',
