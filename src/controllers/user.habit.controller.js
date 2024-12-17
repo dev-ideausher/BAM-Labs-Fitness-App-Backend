@@ -14,17 +14,15 @@ const validateHabitData = reqBody => {
     taskDays,
     numberOfTimes,
     customTimes,
-    notificaions: reqBody.notificaions,
+    notificaions: reqBody.notifications,
     customReminder: reqBody.customReminder,
   };
 
   // Validate taskType and taskDays consistency
   if (taskType === 'daily') {
-    if (taskDays !== 'everyday') {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'For daily taskType, taskDays must be "everyday".');
-    }
-  } else if (taskType === 'weekly') {
-    if (taskDays === 'specific-weekdays') {
+    if (taskDays === 'everyday') {
+      // Allow everyday for daily taskType, nothing else needed
+    } else if (taskDays === 'specific-weekdays') {
       if (!Array.isArray(specificWeekdays) || specificWeekdays.length === 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'specificWeekdays must be a non-empty array.');
       }
@@ -34,25 +32,30 @@ const validateHabitData = reqBody => {
         throw new ApiError(httpStatus.BAD_REQUEST, 'specificWeekdays must contain unique numbers between 0 and 6.');
       }
       validHabit.specificWeekdays = specificWeekdays;
-    } else if (taskDays === 'weekly-count') {
+    } else {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'For daily taskType, taskDays must be "everyday" or "specific-weekdays".'
+      );
+    }
+  } else if (taskType === 'weekly') {
+    if (taskDays === 'weekly-count') {
       if (typeof weeklyCount !== 'number' || weeklyCount <= 0) {
         throw new ApiError(httpStatus.BAD_REQUEST, 'weeklyCount must be a positive number.');
       }
       validHabit.weeklyCount = weeklyCount;
     } else {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        'For weekly taskType, taskDays must be either "specific-weekdays" or "weekly-count".'
-      );
+      throw new ApiError(httpStatus.BAD_REQUEST, 'For weekly taskType, taskDays must be "weekly-count".');
     }
   } else if (taskType === 'monthly') {
-    if (taskDays !== 'monthly-count') {
+    if (taskDays === 'monthly-count') {
+      if (typeof monthlyCount !== 'number' || monthlyCount <= 0) {
+        throw new ApiError(httpStatus.BAD_REQUEST, 'monthlyCount must be a positive number.');
+      }
+      validHabit.monthlyCount = monthlyCount;
+    } else {
       throw new ApiError(httpStatus.BAD_REQUEST, 'For monthly taskType, taskDays must be "monthly-count".');
     }
-    if (typeof monthlyCount !== 'number' || monthlyCount <= 0) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'monthlyCount must be a positive number.');
-    }
-    validHabit.monthlyCount = monthlyCount;
   } else {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid taskType. Allowed values are "daily", "weekly", or "monthly".');
   }

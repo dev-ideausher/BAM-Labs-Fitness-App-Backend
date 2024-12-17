@@ -26,14 +26,17 @@ const userHabitSchma = new mongoose.Schema(
     specificWeekdays: {
       type: [Number],
       required: false,
+      default: null,
     },
     weeklyCount: {
       type: Number,
       required: false,
+      default: null,
     },
     monthlyCount: {
       type: Number,
       required: false,
+      default: null,
     },
     numberOfTimes: {
       type: Number,
