@@ -11,6 +11,7 @@ const createExercise = catchAsync(async (req, res) => {
 });
 
 const createCustomExercise = catchAsync(async (req, res) => {
+   req.body.userId = req.user._id;
   const exercise = await strengthExerciseService.createCustomStrenghtExercise({...req.body, userId: req.user._id});
   res.status(200).json({
     status: true,
