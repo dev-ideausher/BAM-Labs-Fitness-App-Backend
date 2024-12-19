@@ -1,6 +1,6 @@
 const {StrengthSession, StrengthBestSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
-const {getWeeklySessionsMap, getMonthlySessionsMap} = require('../utils/getMaps');
+const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
 
 const logStrengthSession = async strengthSession => {
   return await StrengthSession.create(strengthSession);
@@ -56,6 +56,10 @@ const getMonthlyStrengthMap = async (userId, exerciseId, year, month) => {
   return await getMonthlySessionsMap(StrengthSession, {userId, exerciseId}, year, month);
 };
 
+const getDatedStrengthMap = async (userId, exerciseId, startDate, endDate) => {
+  return await getMapsByDate(StrengthSession, {userId, exerciseId}, startDate, endDate);
+};
+
 module.exports = {
   logStrengthSession,
   getAllSessions,
@@ -66,4 +70,5 @@ module.exports = {
   getUserExerciseBestSession,
   getWeeklyStrengthMap,
   getMonthlyStrengthMap,
+  getDatedStrengthMap
 };

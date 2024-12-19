@@ -52,9 +52,21 @@ const getStrengthMaps = catchAsync(async (req, res) => {
   });
 });
 
+const getDatedStrengthMaps = catchAsync(async (req, res) => {
+  const startDate = new Date(req.query.startDate);
+  const endDate = new Date(req.query.endDate);
+  const datedMap = await strengthSessionService.getDatedStrengthMap(req.user._id, req.params.exerciseId, startDate, endDate);
+  res.status(200).json({
+    status: true,
+    message: 'Dated strength map fetched successfully',
+    datedMap,
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
   getLastAndBestSession,
   getStrengthMaps,
+  getDatedStrengthMaps
 };
