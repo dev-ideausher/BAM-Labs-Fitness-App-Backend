@@ -1,4 +1,4 @@
-const {User, Client} = require('../models');
+const {User} = require('../models');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 

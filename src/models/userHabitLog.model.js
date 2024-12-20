@@ -16,6 +16,10 @@ const userHabitLogSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    counterForDay:{
+        type:Number,
+        default:1
+    },
     status: {
       type: String,
       enum: ['completed', 'skipped', 'missed'],
