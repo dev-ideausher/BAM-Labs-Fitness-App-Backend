@@ -11,6 +11,8 @@ const cardioSessionRoute = require('./cardio.session.route');
 const stretchSessionRoute = require('./stretch.session.route');
 const habitRoute = require('./habit.route');
 const userHabitRoute = require('./user.habit.route');
+const userHabitSessionRoute = require('./user.habit.session.route');
+const adminAuthRoute = require('./admin.auth.route');
 
 const router = express.Router();
 
@@ -26,5 +28,10 @@ router.use('/cardio-sessions', cardioSessionRoute);
 router.use('/stretch-sessions', stretchSessionRoute);
 router.use('/habits', habitRoute);
 router.use('/user-habits', userHabitRoute);
+router.use('/user-habit-session', userHabitSessionRoute);
+
+
+// admin routes
+router.use('/admin/auth', adminAuthRoute);
 
 module.exports = router;

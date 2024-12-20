@@ -12,6 +12,7 @@ const envVarsSchema = Joi.object()
       .required(),
     PORT: Joi.number().default(8082),
     MONGODB_URL: Joi.string().required(),
+    JWT_SECRET: Joi.string().required(),
     // TWILIO_PHONE: Joi.string().required(),
     // TWILIO_SID: Joi.string().required(),
     // TWILIO_AUTH_TOKEN: Joi.string().required(),
@@ -51,6 +52,7 @@ if (error) {
 module.exports = {
   env: envVars.NODE_ENV,
   port: envVars.PORT,
+  jwtSecret:envVars.JWT_SECRET,
   twilio: {
     sid: envVars.TWILIO_SID,
     phone: envVars.TWILIO_PHONE,

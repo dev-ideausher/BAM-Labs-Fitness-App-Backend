@@ -8,6 +8,7 @@ const {Habit, CustomHabit} = require('./habit.model');
 const {UserHabit} = require('./user.habit.model');
 const {PrimaryCategory} = require('./primary.category,model');
 const {TargetedMuscle} = require('./targeted.muscles.model');
+const {Admin} = require('./admin.model');
 
 module.exports = {
   User,
@@ -23,4 +24,5 @@ module.exports = {
   Habit,
   CustomHabit,
   UserHabit,
+  Admin
 };

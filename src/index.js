@@ -13,7 +13,7 @@ mongoose
     console.log(err);
   });
 
-app.listen(config.port, () => {
+app.listen(config.port,  () => {
   console.log(`BAM labs app listening on port ${config.port}!`);
 });
 

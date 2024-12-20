@@ -9,3 +9,5 @@ exports.cardioSessionService = require('./cardio.session.service');
 exports.stretchSessionService = require('./stretch.session.service');
 exports.habitService = require('./habit.service');
 exports.userHabitService = require('./user.habit.service');
+exports.userHabitLogService = require('./user.habit.session');
+exports.adminAuthService = require('./admin.auth.service');

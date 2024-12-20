@@ -12,7 +12,7 @@ const userHabitLogSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    performedAt: {
+    dateTime: {
       type: Date,
       default: Date.now,
     },
@@ -22,10 +22,7 @@ const userHabitLogSchema = new mongoose.Schema(
       required: true,
       default: 'completed',
     },
-    notes: {
-      type: String,
-      required: false,
-    },
+
   },
   { timestamps: true }
 );
