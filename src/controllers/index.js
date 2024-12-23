@@ -11,3 +11,4 @@ exports.habitController = require('./habit.controller');
 exports.userHabitController = require('./user.habit.controller');
 exports.userHabitSessionController = require('./user.habit.session.controller');
 exports.adminAuthController = require('./admin.auth.controller');
+exports.adminUserController = require('./admin.user.controller');

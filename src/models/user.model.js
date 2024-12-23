@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+  const mongoose = require('mongoose');
 const {paginate} = require('./plugins/paginate');
 
 const userSchema = new mongoose.Schema(
@@ -60,6 +60,14 @@ const userSchema = new mongoose.Schema(
     appNotificationsLastSeenAt: {
       type: Date,
       default: Date.now,
+    },
+    isPhoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     isBlocked: {
       type: Boolean,

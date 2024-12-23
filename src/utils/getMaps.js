@@ -103,7 +103,6 @@ const getMapsByDate = async (model, findQuery, startDate, endDate) => {
       dateObject.sessionMarked = true;
     }
   });
-
   return dateArray;
 };
 
