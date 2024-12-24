@@ -11,3 +11,4 @@ exports.habitService = require('./habit.service');
 exports.userHabitService = require('./user.habit.service');
 exports.userHabitLogService = require('./user.habit.session');
 exports.adminAuthService = require('./admin.auth.service');
+exports.contactUsService = require('./contactUs.service');
