@@ -73,8 +73,6 @@ const getMonthlySessionsMap = async (model, findQuery, year, month) => {
 
 const getMapsByDate = async (model, findQuery, startDate, endDate) => {
   const nextDay = new Date(endDate);
-  console.log(endDate);
-  console.log(startDate);
   nextDay.setDate(endDate.getDate() + 1);
   const sessions = await model
     .find({
@@ -105,9 +103,65 @@ const getMapsByDate = async (model, findQuery, startDate, endDate) => {
   });
   return dateArray;
 };
+const getMapsByDateForHabitLog = async (model, findQuery, startDate, endDate) => {
+  const nextDay = new Date(endDate);
+  nextDay.setDate(endDate.getDate() + 1);
+
+  // Fetch sessions with userHabitId populated to get numberOfTimes
+  const sessions = await model
+    .find({
+      ...findQuery,
+      dateTime: { $gte: startDate, $lte: nextDay },
+    })
+    .populate({
+      path: 'userHabitId',
+      select: 'numberOfTimes',
+    })
+    .sort({ dateTime: 1 });
+
+  const dateArray = [];
+  const days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+
+  for (let day = 0; day < days; day++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + day);
+    const dateString = date.toISOString().split('T')[0];
+    dateArray.push({
+      date: dateString,
+      sessionMarked: false,
+      completed: false, // To check if the goal for the day is completed
+      numberOfTimes: null, // Placeholder for numberOfTimes
+      counterForDay: null, // Placeholder for counterForDay
+    });
+  }
+
+  sessions.forEach(session => {
+    const dateString = session.dateTime.toISOString().split('T')[0];
+    const dateObject = dateArray.find(item => item.date === dateString);
+
+    if (dateObject) {
+      dateObject.sessionMarked = true;
+
+      // Add numberOfTimes and counterForDay to response
+      dateObject.numberOfTimes = session.userHabitId ? session.userHabitId.numberOfTimes : null;
+      dateObject.counterForDay = session.counterForDay;
+
+      // Check if numberOfTimes === counterForDay
+      if (
+        session.userHabitId &&
+        session.userHabitId.numberOfTimes === session.counterForDay
+      ) {
+        dateObject.completed = true;
+      }
+    }
+  });
+
+  return dateArray;
+};
 
 module.exports = {
   getWeeklySessionsMap,
   getMonthlySessionsMap,
   getMapsByDate,
+  getMapsByDateForHabitLog
 };

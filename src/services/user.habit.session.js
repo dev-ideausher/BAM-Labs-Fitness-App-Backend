@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const { UserHabit } = require('../models');
 const { UserHabitLog } = require('../models/userHabitLog.model');
 const ApiError = require('../utils/ApiError');
-const { getMapsByDate } = require('../utils/getMaps');
+const {  getMapsByDateForHabitLog } = require('../utils/getMaps');
 
 const createUserHabitLog = async (data) => {
     const userHabit = await UserHabit.findById(data.userHabitId);
@@ -28,7 +28,7 @@ const createUserHabitLog = async (data) => {
     return saved;
 }
 const getDatedHabitLogs = async (userHabitId, startDate, endDate) => {
-    return getMapsByDate(UserHabitLog, {userHabitId}, startDate, endDate);
+    return getMapsByDateForHabitLog(UserHabitLog, {userHabitId}, startDate, endDate);
 }
 module.exports = {
   createUserHabitLog,
