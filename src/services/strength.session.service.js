@@ -24,7 +24,8 @@ const checkAndLogBestSession = async session => {
   const {exerciseId, totalReps} = session._doc;
 
   const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1});
-  const bestSessionData = await StrengthSession.findById(bestSession.sessionId);
+  console.log(bestSession)
+  const bestSessionData = await StrengthSession.findById(sessionId);
 
   if (!bestSession || totalReps > bestSessionData.totalReps) {
     if (bestSession) {

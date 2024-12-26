@@ -3,7 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 
 const logSession = catchAsync(async (req, res) => {
   const session = await strengthSessionService.logStrengthSession({...req.body, userId: req.user._id});
-  console.log(session);
+  // console.log(session);
   const data = await strengthSessionService.checkAndLogBestSession({
     ...session,
     sessionId: session._id,
