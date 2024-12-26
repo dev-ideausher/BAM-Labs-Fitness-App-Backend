@@ -64,10 +64,21 @@ const getDatedStrengthMaps = catchAsync(async (req, res) => {
   });
 });
 
+const getAvgWeightPerMonthByExcercize = catchAsync(async (req, res) => {
+  const {exerciseId} = req.params;
+  const avgWeightPerMonth = await strengthSessionService.calculateMonthlyAvgWeight(req.user._id, exerciseId);
+  res.status(200).json({
+    status: true,
+    message: 'Avg weight per month fetched successfully',
+    avgWeightPerMonth,
+  });
+})
+
 module.exports = {
   logSession,
   getMySessions,
   getLastAndBestSession,
   getStrengthMaps,
-  getDatedStrengthMaps
+  getDatedStrengthMaps,
+  getAvgWeightPerMonthByExcercize
 };

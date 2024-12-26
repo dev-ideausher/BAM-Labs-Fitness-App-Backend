@@ -1,3 +1,4 @@
+const  mongoose = require('mongoose');
 const {StrengthSession, StrengthBestSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
 const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
@@ -61,6 +62,58 @@ const getDatedStrengthMap = async (userId, exerciseId, startDate, endDate) => {
   return await getMapsByDate(StrengthSession, {userId, exerciseId}, startDate, endDate);
 };
 
+
+async function calculateMonthlyAvgWeight(userId, exerciseId) {
+  const currentYear = new Date().getFullYear();
+
+
+  const results = await StrengthSession.aggregate([
+    // Match records for the given user, exercise, and current year
+    {
+      $match: {
+        userId: userId,
+        exerciseId:new mongoose.Types.ObjectId(exerciseId),
+        dateTime: {
+          $gte: new Date(`${currentYear}-01-01T00:00:00Z`),
+          $lte: new Date(`${currentYear}-12-31T23:59:59Z`),
+        },
+      },
+    },
+    // Group by month and calculate average weight
+    {
+      $group: {
+        _id: { $month: '$dateTime' }, // Group by month
+        avgWeight: { $avg: '$weight' },
+      },
+    },
+    // Sort by month
+    {
+      $sort: { _id: 1 },
+    },
+  ]);
+
+
+  // Initialize an array with all months set to 0
+  const avgWeightPerMonth = [];
+  for (let month = 1; month <= 12; month++) {
+    avgWeightPerMonth.push({
+      month: month.toString(),
+      avgWeight: 0,
+    });
+  }
+
+  // Populate the array with actual averages from the query
+  results.forEach((result) => {
+    const index = result._id - 1; // Adjust month (1-indexed) to array index (0-indexed)
+    avgWeightPerMonth[index].avgWeight = result.avgWeight;
+  });
+
+  return avgWeightPerMonth;
+}
+
+
+
+
 module.exports = {
   logStrengthSession,
   getAllSessions,
@@ -71,5 +124,6 @@ module.exports = {
   getUserExerciseBestSession,
   getWeeklyStrengthMap,
   getMonthlyStrengthMap,
-  getDatedStrengthMap
+  getDatedStrengthMap,
+  calculateMonthlyAvgWeight
 };
