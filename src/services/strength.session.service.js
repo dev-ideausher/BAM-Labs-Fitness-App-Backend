@@ -23,7 +23,7 @@ const getLastSession = async (userId, exerciseId) => {
 const checkAndLogBestSession = async session => {
   const {userId, sessionId} = session;
   const {exerciseId, totalReps} = session._doc;
-  
+
   const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
   let updatedBestSession = bestSession;
 
@@ -50,7 +50,7 @@ const getUserBestSessions = async (userId, query, populateConfig) => {
 };
 
 const getUserExerciseBestSession = async (userId, exerciseId) => {
-  return await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1});
+  return await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
 };
 
 const getWeeklyStrengthMap = async (userId, exerciseId) => {

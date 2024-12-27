@@ -32,7 +32,7 @@ const getLastAndBestSession = catchAsync(async (req, res) => {
     status: true,
     message: 'Last and best session fetched successfully',
     lastSession,
-    bestSession,
+    bestSession:bestSession.sessionId,
   });
 });
 
