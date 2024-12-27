@@ -23,22 +23,25 @@ const getLastSession = async (userId, exerciseId) => {
 const checkAndLogBestSession = async session => {
   const {userId, sessionId} = session;
   const {exerciseId, totalReps} = session._doc;
+  
+  const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
+  let updatedBestSession = bestSession;
 
-  const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1});
-  console.log(bestSession)
-  const bestSessionData = await StrengthSession.findById(sessionId);
+  let isUpdated = false;
+  if(!bestSession){
+    const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
+    const updatedData = await StrengthBestSession.findOne({_id:data._id}).populate('sessionId');
+    updatedBestSession = updatedData;
 
-  if (!bestSession || totalReps > bestSessionData.totalReps) {
-    if (bestSession) {
-      const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId});
-      return {data, updated: true};
-    } else {
-      const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
-      return {data, updated: true};
-    }
+    isUpdated = true;
   } else {
-    return {data: bestSession, updated: false};
+    if(totalReps > bestSession.sessionId.totalReps){
+      const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId}, {new: true}).populate('sessionId');
+      updatedBestSession = data;
+      isUpdated = true;
+    }
   }
+  return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
 };
 
 const getUserBestSessions = async (userId, query, populateConfig) => {
