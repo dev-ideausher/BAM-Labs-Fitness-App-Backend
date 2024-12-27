@@ -15,6 +15,7 @@ const userHabitSessionRoute = require('./user.habit.session.route');
 const adminAuthRoute = require('./admin.auth.route');
 const adminUserRoute = require('./admin.users.route');
 const contactUsRoute = require('./contactUs.route');
+const trackerRoute = require('./admin.tracker.route');
 
 const router = express.Router();
 
@@ -36,6 +37,7 @@ router.use('/user-habit-session', userHabitSessionRoute);
 // admin routes
 router.use('/admin/auth', adminAuthRoute);
 router.use('/admin/users', adminUserRoute);
+router.use('/admin/tracker', trackerRoute);
 router.use('/contact-us', contactUsRoute);
 
 module.exports = router;
