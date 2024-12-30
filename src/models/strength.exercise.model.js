@@ -18,6 +18,21 @@ const strengthExerciseSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    metrices: {
+      type: Array,
+      enums: ["date", "sessionTime", "reps", "sets", "weight", "totalReps"],
+      required: true,
+    },
+    video:{
+      key: {
+        type:String,
+        // required:true
+      },
+      url: {
+        type:String,
+        // required:true
+      },
+    }
   },
   {timestamps: true}
 );

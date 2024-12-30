@@ -16,6 +16,7 @@ const adminAuthRoute = require('./admin.auth.route');
 const adminUserRoute = require('./admin.users.route');
 const contactUsRoute = require('./contactUs.route');
 const trackerRoute = require('./admin.tracker.route');
+const uploadRoute = require('./upload.route');
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.use('/stretch-sessions', stretchSessionRoute);
 router.use('/habits', habitRoute);
 router.use('/user-habits', userHabitRoute);
 router.use('/user-habit-session', userHabitSessionRoute);
+router.use('/upload', uploadRoute);
 
 
 // admin routes

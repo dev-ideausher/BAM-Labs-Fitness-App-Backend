@@ -53,10 +53,35 @@ const deleteHabit = catchAsync(async (req, res) => {
         habit:habit
     });
 });
+
+// create new strength content
+const createStrengthContent = catchAsync(async (req, res) => {
+    const {name, image, targetMuscle} = req.body;
+    const strengthContent = await trackerService.createStrengthContent({name, image, targetMuscle});
+    res.status(200).json({
+        status: true,
+        message: 'Strength content created successfully',
+        strengthContent
+    });
+});
+
+
+const getSpecificCategory = catchAsync(async (req, res) => {
+    const {id} = req.params;
+    const strengthContent = await trackerService.getSpecificCategory(id);
+    res.status(200).json({
+        status: true,
+        message: 'Strength content fetched successfully',
+        strengthContent
+    });
+});
+
 module.exports = {
     getStrengthContent,
     getAllHabits,
+    getSpecificCategory,
     createNewHabit,
     updateHabit,
+    createStrengthContent,
     deleteHabit
 }

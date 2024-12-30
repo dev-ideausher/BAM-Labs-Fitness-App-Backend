@@ -8,6 +8,16 @@ const primaryCategorySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    image: {
+      key: {
+        type:String,
+        // required:true
+      },
+      url: {
+        type:String,
+        // required:true
+      },
+    }
   },
   {timestamps: true}
 );
