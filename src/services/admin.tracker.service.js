@@ -1,5 +1,6 @@
 
 
+const mongoose = require('mongoose');
 const { PrimaryCategory, TargetedMuscle, Habit, StrengthExercise } = require("../models");
 const { getPaginateConfig } = require("../utils/queryPHandler");
 
@@ -110,6 +111,40 @@ const getSpecificCategory = async (id) => {
     return res;
 };
 
+const updateMuscleExcercise = async (data) => {
+    const {type, id, name, video, metrices} = data;
+    let res;
+    if(type === "muscle"){
+        const muscle = await TargetedMuscle.findOne({_id:id});
+        muscle.targetedMuscle = name ? name : muscle.targetedMuscle;
+        const saved = await muscle.save();
+        res = saved;
+    } else if(type === "excercise"){
+        const excercize = await StrengthExercise.findOne({_id: new mongoose.Types.ObjectId(id)});
+        excercize.exerciseName = name ? name : excercize.exerciseName;
+        excercize.video = video?.key ? video : excercize.video;
+        excercize.metrices =  metrices && metrices.length > 0 ? metrices : excercize.metrices;
+        const saved = await excercize.save();
+        res = saved;
+    }
+    return res;
+
+}
+
+const deleteMuscle = async (id) => {
+    const muscle = await TargetedMuscle.findOneAndUpdate({_id:id}, {isDeleted:true}, {new: true});
+    const muscleExcercises = await StrengthExercise.find({targetedMuscle:id});
+    muscleExcercises.forEach(muscleExcercise => {
+        muscleExcercise.isDeleted = true;
+        muscleExcercise.save();
+    });
+    return muscle;
+}
+
+const deleteExcercise = async (id) => {
+    const excercize = await StrengthExercise.findOneAndUpdate({_id:id}, {isDeleted:true}, {new: true});
+    return excercize;
+}
 
 module.exports = {
     getStrengthContent,
@@ -118,5 +153,8 @@ module.exports = {
     createNewHabit,
     updateHabit,
     deleteHabit,
-    createStrengthContent
+    createStrengthContent,
+    updateMuscleExcercise,
+    deleteMuscle,   
+    deleteExcercise
 }

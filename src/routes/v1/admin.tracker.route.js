@@ -15,4 +15,8 @@ router.delete('/habits/:id', authenticate, trackerController.deleteHabit);
 
 router.post('/strength-content', authenticate,validate(strengthContentValidation.createStrengthContentValidation), trackerController.createStrengthContent);
 router.get('/category/:id', authenticate, trackerController.getSpecificCategory);
+
+router.patch('/update/muscle/', authenticate, validate(strengthContentValidation.updateMuscleExcerciseValidation), trackerController.updateMuscleExcercise);
+router.put("/delete/muscle/:id", authenticate, trackerController.deleteMuscle);
+router.put("/delete/excercise/:id", authenticate, trackerController.deleteExcercise);
 module.exports = router;

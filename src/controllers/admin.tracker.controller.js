@@ -76,6 +76,37 @@ const getSpecificCategory = catchAsync(async (req, res) => {
     });
 });
 
+const updateMuscleExcercise = catchAsync(async (req, res) => {
+    const {type, id, name, video, metrices} = req.body;
+    const strengthContent = await trackerService.updateMuscleExcercise({type, id, name, video, metrices});
+    res.status(200).json({
+        status: true,
+        message: 'Strength content updated successfully',
+        strengthContent
+    });
+});
+
+const deleteMuscle = catchAsync(async (req, res) => {
+    const {id} = req.params;
+    const strengthContent = await trackerService.deleteMuscle(id);
+    res.status(200).json({
+        status: true,
+        message: 'Strength content deleted successfully',
+        strengthContent
+    });
+});
+
+const deleteExcercise = catchAsync(async (req, res) => {
+    const {id} = req.params;
+    const strengthContent = await trackerService.deleteExcercise(id);
+    res.status(200).json({
+        status: true,
+        message: 'Strength content deleted successfully',
+        strengthContent
+    });
+});
+
+
 module.exports = {
     getStrengthContent,
     getAllHabits,
@@ -83,5 +114,8 @@ module.exports = {
     createNewHabit,
     updateHabit,
     createStrengthContent,
-    deleteHabit
+    deleteHabit,
+    updateMuscleExcercise,
+    deleteMuscle,
+    deleteExcercise
 }

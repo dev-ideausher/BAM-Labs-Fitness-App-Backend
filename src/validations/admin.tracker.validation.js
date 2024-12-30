@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const { objectId } = require('./custom.validation');
 
 const createStrengthContentValidation = {
     body: Joi.object({
@@ -29,4 +30,24 @@ const createStrengthContentValidation = {
     })
 };
 
-module.exports = {createStrengthContentValidation};
+const updateMuscleExcerciseValidation = {
+    body: Joi.object({
+        type:Joi.string().valid("muscle", "excercise").required(),
+        id: Joi.string()
+        .custom(objectId)
+        .required(),
+        name: Joi.string().when('type', {
+            is: 'muscle',
+            then: Joi.required(),
+            otherwise: Joi.optional()
+        }),
+        video: Joi.object({
+            key: Joi.string().required(),
+
+            url: Joi.string().required()
+        }),
+        metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps"))
+    })
+}
+
+module.exports = {createStrengthContentValidation, updateMuscleExcerciseValidation};

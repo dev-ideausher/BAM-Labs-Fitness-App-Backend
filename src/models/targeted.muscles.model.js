@@ -13,6 +13,10 @@ const targetedMuscleSchema = new mongoose.Schema(
       ref: 'PrimaryCategory',
       required: true,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {timestamps: true}
 );
