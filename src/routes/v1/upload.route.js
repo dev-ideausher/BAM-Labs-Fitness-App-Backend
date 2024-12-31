@@ -22,7 +22,7 @@ router.post(
           url: file.url,
         }));
   
-      res.status(200).json({files: fileData});
+      res.status(200).json({data: fileData, message: "File uploaded successfully", status:true});
     })
   );
 

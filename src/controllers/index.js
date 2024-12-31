@@ -14,3 +14,4 @@ exports.adminAuthController = require('./admin.auth.controller');
 exports.adminUserController = require('./admin.user.controller');
 exports.contactUsController = require('./contactUs.controller');
 exports.trackerController = require('./admin.tracker.controller');
+exports.contentController = require('./content.controller');

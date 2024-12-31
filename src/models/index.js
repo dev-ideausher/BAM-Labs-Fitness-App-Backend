@@ -10,6 +10,7 @@ const {PrimaryCategory} = require('./primary.category,model');
 const {TargetedMuscle} = require('./targeted.muscles.model');
 const {Admin} = require('./admin.model');
 const {ContactUs} = require('./contact.model');
+const {Content} = require("./content.model")
 
 module.exports = {
   User,
@@ -26,5 +27,6 @@ module.exports = {
   CustomHabit,
   UserHabit,
   Admin,
-  ContactUs
+  ContactUs,
+  Content
 };

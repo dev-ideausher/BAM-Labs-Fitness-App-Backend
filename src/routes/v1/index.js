@@ -17,6 +17,7 @@ const adminUserRoute = require('./admin.users.route');
 const contactUsRoute = require('./contactUs.route');
 const trackerRoute = require('./admin.tracker.route');
 const uploadRoute = require('./upload.route');
+const contentRoute = require('./content.route');
 
 const router = express.Router();
 
@@ -41,5 +42,6 @@ router.use('/admin/auth', adminAuthRoute);
 router.use('/admin/users', adminUserRoute);
 router.use('/admin/tracker', trackerRoute);
 router.use('/contact-us', contactUsRoute);
+router.use('/content', contentRoute);
 
 module.exports = router;

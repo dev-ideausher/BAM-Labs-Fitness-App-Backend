@@ -91,7 +91,7 @@ const deleteMuscle = catchAsync(async (req, res) => {
     const strengthContent = await trackerService.deleteMuscle(id);
     res.status(200).json({
         status: true,
-        message: 'Strength content deleted successfully',
+        message: 'Strength content muscle deleted successfully',
         strengthContent
     });
 });
@@ -101,7 +101,7 @@ const deleteExcercise = catchAsync(async (req, res) => {
     const strengthContent = await trackerService.deleteExcercise(id);
     res.status(200).json({
         status: true,
-        message: 'Strength content deleted successfully',
+        message: 'Strength content excercise deleted successfully',
         strengthContent
     });
 });
