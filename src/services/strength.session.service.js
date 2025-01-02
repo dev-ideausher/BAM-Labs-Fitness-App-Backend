@@ -23,7 +23,14 @@ const getSessionByDate = async (userId, exerciseId, date) => {
   return await StrengthSession.findOne({userId, exerciseId, dateTime: {
     $gte: startOfDay,
     $lte: endOfDay,
-  },}).sort({dateTime: -1});
+  },}).populate({
+    path: "exerciseId",
+    select: "-createdAt -updatedAt -isDeleted -__v",
+    populate: [
+      { path: "primaryCategory", model: "PrimaryCategory" ,  select: "-createdAt -updatedAt -isDeleted -__v",}, // Replace CategoryModel with the actual model for primaryCategory
+      { path: "targetedMuscle", model: "TargetedMuscles" ,  select: "-createdAt -updatedAt -isDeleted -__v",},   // Replace MuscleModel with the actual model for targetedMuscle
+    ],
+  }).sort({dateTime: -1});
 };
 
 const getLastSession = async (userId, exerciseId) => {
