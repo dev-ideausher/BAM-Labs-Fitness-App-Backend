@@ -104,10 +104,11 @@ const getUserHabits = catchAsync(async (req, res) => {
       return { ...data, habitPerformed }; // Use `toObject` to convert Mongoose objects if needed
     })
   );
+  habits.results = enrichedHabits;
   res.status(200).json({
     status: true,
     message: 'User habits retrieved successfully',
-    habits:enrichedHabits,
+    habits,
   });
 });
 
