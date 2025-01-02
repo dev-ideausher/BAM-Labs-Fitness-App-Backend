@@ -21,4 +21,15 @@ const supportRequestValidationSchema = {
       })
       
 }
-module.exports = { supportRequestValidationSchema };
+
+const getContentTypeValidationSchema = {
+    query:Joi.object().keys({
+        type: Joi.string().valid("privacy policy", "terms & conditions", "introduction", "about us").required().messages({
+          'string.base': 'Type must be a string.',
+          'string.empty': 'Type cannot be empty.',
+          'any.required': 'Type is required.',
+        }),
+      })
+      
+}
+module.exports = { supportRequestValidationSchema, getContentTypeValidationSchema };

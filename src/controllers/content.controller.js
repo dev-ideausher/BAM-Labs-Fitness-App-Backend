@@ -18,6 +18,13 @@ const getAllContents = catchAsync(async (req, res) => {
   res.status(200).json({data:contents, status:true, message:"contents fetched successfully"});
 })
 
+const getContentByType = catchAsync(async (req, res) => {
+  const { type } = req.query;
+  const contents = await Content.findOne({type})
+  res.status(200).json({data:contents, status:true, message:"contents fetched successfully"});
+})
+
+
 // Get content by ID
 const getContentById = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -32,10 +39,10 @@ const getContentById = catchAsync(async (req, res) => {
 // Update content by ID
 const updateContent = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const { type, content } = req.body;
+  const { content } = req.body;
   const updatedContent = await Content.findByIdAndUpdate(
     id,
-    { type, content },
+    {  content },
     { new: true }
   );
   if (!updatedContent || updatedContent.isDeleted) {
@@ -66,4 +73,5 @@ module.exports = {
   getContentById,
   updateContent,
   deleteContent,
+  getContentByType,
 };

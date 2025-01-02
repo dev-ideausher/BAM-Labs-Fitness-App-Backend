@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const {userHabitService} = require('../services');
+const {userHabitService, userHabitLogService} = require('../services');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -97,10 +97,17 @@ const getUserHabit = catchAsync(async (req, res) => {
 
 const getUserHabits = catchAsync(async (req, res) => {
   const habits = await userHabitService.getUserHabits(req.user._id, req.query, [{path: 'habitId'}]);
+  console.log(habits)
+  const enrichedHabits = await Promise.all(
+    habits.results.map(async (data) => {
+      const habitPerformed = await userHabitLogService.getHabitCompletionCount(data.habitId, req.user._id);
+      return { ...data, habitPerformed }; // Use `toObject` to convert Mongoose objects if needed
+    })
+  );
   res.status(200).json({
     status: true,
     message: 'User habits retrieved successfully',
-    habits,
+    habits:enrichedHabits,
   });
 });
 

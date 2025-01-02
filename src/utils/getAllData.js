@@ -26,7 +26,7 @@ async function getAllData(model, query, populateConfig) {
 
   const totalResults = await filteredResults(model, query);
   const totalPages = Math.ceil(totalResults / limit);
-
+  
   return {
     page,
     limit,
