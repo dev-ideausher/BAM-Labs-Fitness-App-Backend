@@ -25,6 +25,17 @@ const getMySessions = catchAsync(async (req, res) => {
   });
 });
 
+const getSessionByDate = catchAsync(async (req, res) => {
+  const session = await strengthSessionService.getSessionByDate(req.user._id, req.params.exerciseId, req.query.date);
+  res.status(200).json({
+    status: true,
+    message: 'Session fetched successfully',
+    session,
+  });
+});
+
+
+
 const getLastAndBestSession = catchAsync(async (req, res) => {
   const lastSession = await strengthSessionService.getLastSession(req.user._id, req.params.exerciseId);
   const bestSession = await strengthSessionService.getUserExerciseBestSession(req.user._id, req.params.exerciseId);
@@ -79,5 +90,6 @@ module.exports = {
   getLastAndBestSession,
   getStrengthMaps,
   getDatedStrengthMaps,
-  getAvgWeightPerMonthByExcercize
+  getAvgWeightPerMonthByExcercize,
+  getSessionByDate
 };

@@ -15,7 +15,7 @@ const getAllExercises = async (query, populateConfig) => {
 };
 
 const getExerciseById = async id => {
-  return await StrengthExercise.findById(id);
+  return await StrengthExercise.findById(id).populate('primaryCategory', "-createdAt -updatedAt -isDeleted").populate('targetedMuscle', "-createdAt -updatedAt -isDeleted");
 };
 
 const getUserCustomExercises = async (userId, query, populateConfig) => {

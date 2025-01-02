@@ -5,8 +5,9 @@ const contentSchema = new mongoose.Schema(
   {
     type: {
       type: String,
+      enum: ["privacy policy", "terms & conditions", "about us"],
       required: true,
-      trim: true,
+
     },
     content:{
         type:String,

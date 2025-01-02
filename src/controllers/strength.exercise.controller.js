@@ -36,8 +36,18 @@ const getAllExercises = catchAsync(async (req, res) => {
   });
 });
 
+const getExerciseById = catchAsync(async (req, res) => {
+  const exercise = await strengthExerciseService.getExerciseById(req.params.id);
+  res.status(200).json({
+    status: true,
+    message: 'Exercise fetched successfully',
+    exercise,
+  });
+});
+
 module.exports = {
   createExercise,
   createCustomExercise,
   getAllExercises,
+  getExerciseById
 };

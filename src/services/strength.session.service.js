@@ -16,6 +16,16 @@ const getSessionById = async id => {
   return await StrengthSession.findById(id);
 };
 
+const getSessionByDate = async (userId, exerciseId, date) => {
+  const startOfDay = new Date(date);
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+  return await StrengthSession.findOne({userId, exerciseId, dateTime: {
+    $gte: startOfDay,
+    $lte: endOfDay,
+  },}).sort({dateTime: -1});
+};
+
 const getLastSession = async (userId, exerciseId) => {
   return await StrengthSession.findOne({userId, exerciseId}).sort({dateTime: -1});
 };
@@ -128,5 +138,6 @@ module.exports = {
   getWeeklyStrengthMap,
   getMonthlyStrengthMap,
   getDatedStrengthMap,
-  calculateMonthlyAvgWeight
+  calculateMonthlyAvgWeight,
+  getSessionByDate
 };

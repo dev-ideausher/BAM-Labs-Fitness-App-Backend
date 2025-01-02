@@ -5,6 +5,17 @@ const dbOptions = {
   sortOrder: 'desc',
 };
 
+const videoTypesExtentions = {
+  'video/mp4': 'mp4',
+  'video/mpeg': 'mpeg',
+  'video/ogg': 'ogg',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
+  'video/x-msvideo': 'avi',
+  'video/x-ms-wmv': 'wmv',
+  'video/x-flv': 'flv',
+}
+
 const imgTypeToExtension = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -31,7 +42,9 @@ const mimetypeToExtension = {
 
 const imageTypes = Object.keys(imgTypeToExtension);
 const docTypes = Object.keys(docTypeToExtension);
-const fileTypes = [...imageTypes, ...docTypes];
+const videoTypes = Object.keys(videoTypesExtentions);
+const fileTypes = [...imageTypes, ...docTypes , ...videoTypes];
+
 
 const userTypes = {
   ALL: 'All',

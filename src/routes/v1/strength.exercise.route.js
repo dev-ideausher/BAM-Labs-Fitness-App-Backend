@@ -8,6 +8,8 @@ const router = express.Router();
 
 router.post('/', firebaseAuth('admin'), strengthExerciseController.createExercise);
 
+router.get('/:id', firebaseAuth('user'), strengthExerciseController.getExerciseById);
+
 router.post('/custom', firebaseAuth('user'), strengthExerciseController.createCustomExercise);
 
 router.get('/', firebaseAuth('All'), strengthExerciseController.getAllExercises);

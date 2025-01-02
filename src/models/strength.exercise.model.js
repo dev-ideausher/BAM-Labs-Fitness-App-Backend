@@ -10,7 +10,7 @@ const strengthExerciseSchema = new mongoose.Schema(
     },
     targetedMuscle: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'TargetedMuscle',
+      ref: 'TargetedMuscles',
       required: true,
     },
     exerciseName: {
