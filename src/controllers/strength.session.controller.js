@@ -39,11 +39,12 @@ const getSessionByDate = catchAsync(async (req, res) => {
 const getLastAndBestSession = catchAsync(async (req, res) => {
   const lastSession = await strengthSessionService.getLastSession(req.user._id, req.params.exerciseId);
   const bestSession = await strengthSessionService.getUserExerciseBestSession(req.user._id, req.params.exerciseId);
+  console.log(bestSession)
   res.status(200).json({
     status: true,
     message: 'Last and best session fetched successfully',
     lastSession,
-    bestSession:bestSession.sessionId,
+    bestSession:bestSession?.sessionId || null,
   });
 });
 
