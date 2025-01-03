@@ -14,7 +14,7 @@ const createLog = catchAsync(async (req, res) => {
   };
 
   const habitLog = await userHabitLogService.createUserHabitLog(logData);
-  habitLog.userHabitId.habitPerformed = await getHabitCompletionCount(habitLog.userHabitId.habitId, req.user._id);
+  // habitLog.userHabitId.habitPerformed = await getHabitCompletionCount(habitLog.userHabitId.habitId, req.user._id);
   res.status(httpStatus.CREATED).json({
     status: true,
     message: 'User habit logged successfully',
