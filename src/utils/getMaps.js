@@ -132,13 +132,16 @@ const getMapsByDateForHabitLog = async (model, findQuery, startDate, endDate) =>
       completed: false, // To check if the goal for the day is completed
       numberOfTimes: null, // Placeholder for numberOfTimes
       counterForDay: null, // Placeholder for counterForDay
+      startTime: null,
+      endTime: null,
     });
   }
 
   sessions.forEach(session => {
     const dateString = session.dateTime.toISOString().split('T')[0];
     const dateObject = dateArray.find(item => item.date === dateString);
-
+    dateObject.startTime = session.createdAt.toISOString().split('T')[1] || null;
+    dateObject.endTime = session.updatedAt.toISOString().split('T')[1] || null;
     if (dateObject) {
       dateObject.sessionMarked = true;
 

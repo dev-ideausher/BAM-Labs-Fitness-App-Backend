@@ -52,7 +52,8 @@ const createUserHabitLog = async (data) => {
   }
 
   habitLog.counterForDay += 1;
-  return await habitLog.save();
+  const savedHabitLog = await habitLog.save();
+  return await savedHabitLog.populate('userHabitId')
 };
 
 const getDatedHabitLogs = async (userHabitId, startDate, endDate) => {

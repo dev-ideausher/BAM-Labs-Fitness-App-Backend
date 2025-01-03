@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { userHabitLogService } = require('../services');
+const { getHabitCompletionCount } = require('../services/user.habit.session');
 
 
 const createLog = catchAsync(async (req, res) => {
@@ -13,7 +14,7 @@ const createLog = catchAsync(async (req, res) => {
   };
 
   const habitLog = await userHabitLogService.createUserHabitLog(logData);
-
+  habitLog.userHabitId.habitPerformed = await getHabitCompletionCount(habitLog.userHabitId.habitId, req.user._id);
   res.status(httpStatus.CREATED).json({
     status: true,
     message: 'User habit logged successfully',
