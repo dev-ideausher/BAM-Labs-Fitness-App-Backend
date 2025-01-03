@@ -107,6 +107,18 @@ const deleteExcercise = catchAsync(async (req, res) => {
 });
 
 
+const updateVideo = catchAsync(async (req, res) => {
+    const {excerciseId} = req.params;
+    const {video} = req.body;
+    const updatedVideo = await trackerService.updateVideo(excerciseId, video);
+    res.status(200).json({
+        status: true,
+        message: 'Video updated successfully',
+        updatedVideo
+    });
+});
+
+
 module.exports = {
     getStrengthContent,
     getAllHabits,
@@ -117,5 +129,6 @@ module.exports = {
     deleteHabit,
     updateMuscleExcercise,
     deleteMuscle,
-    deleteExcercise
+    deleteExcercise,
+    updateVideo
 }

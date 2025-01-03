@@ -146,6 +146,12 @@ const deleteExcercise = async (id) => {
     return excercize;
 }
 
+
+const updateVideo = async (excerciseId, video) => {
+    let id = new mongoose.Types.ObjectId(excerciseId.toString());
+    const strengthExercise = await StrengthExercise.findByIdAndUpdate(id, {video}, {new: true});
+    return strengthExercise;
+}
 module.exports = {
     getStrengthContent,
     getSpecificCategory,
@@ -156,5 +162,6 @@ module.exports = {
     createStrengthContent,
     updateMuscleExcercise,
     deleteMuscle,   
-    deleteExcercise
+    deleteExcercise,
+    updateVideo
 }

@@ -19,4 +19,9 @@ router.get('/category/:id', authenticate, trackerController.getSpecificCategory)
 router.patch('/update/muscle/', authenticate, validate(strengthContentValidation.updateMuscleExcerciseValidation), trackerController.updateMuscleExcercise);
 router.put("/delete/muscle/:id", authenticate, trackerController.deleteMuscle);
 router.put("/delete/excercise/:id", authenticate, trackerController.deleteExcercise);
+
+
+// content management part for updating video only
+
+router.put('/update/video/:excerciseId', authenticate, validate(strengthContentValidation.updateVideoValidation), trackerController.updateVideo);
 module.exports = router;
