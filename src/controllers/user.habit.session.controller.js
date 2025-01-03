@@ -1,7 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { userHabitLogService } = require('../services');
-const { getHabitCompletionCount } = require('../services/user.habit.session');
+// const { getHabitCompletionCount } = require('../services/user.habit.session');
 
 
 const createLog = catchAsync(async (req, res) => {

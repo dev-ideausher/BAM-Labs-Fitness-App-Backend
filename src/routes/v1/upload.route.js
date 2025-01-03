@@ -25,5 +25,23 @@ router.post(
       res.status(200).json({data: fileData, message: "File uploaded successfully", status:true});
     })
   );
+router.put(
+    '/update/file',
+    fileUploadService.multerUpload.single('file'),
+    catchAsync(async (req, res) => {
+      const files = req.file;
+      const key = req.body.key;
+      const uploadedFiles = await fileUploadService.s3Upsert({file: files, existingFileKey: key});
+    //   const fileData = uploadedFiles
+    //     .filter(file => file !== null)
+    //     .map(file => ({
+    //       key: file.key,
+    //       url: file.url,
+    //     }));
+  
+      res.status(200).json({data: uploadedFiles, message: "File uploaded successfully", status:true});
+    })
+  );
+  
 
 module.exports = router;
