@@ -70,7 +70,6 @@ const getMonthlySessionsMap = async (model, findQuery, year, month) => {
 
   return dateArray;
 };
-
 const getMapsByDate = async (model, findQuery, startDate, endDate) => {
   const nextDay = new Date(endDate);
   nextDay.setDate(endDate.getDate() + 1);
@@ -140,8 +139,8 @@ const getMapsByDateForHabitLog = async (model, findQuery, startDate, endDate) =>
   sessions.forEach(session => {
     const dateString = session.dateTime.toISOString().split('T')[0];
     const dateObject = dateArray.find(item => item.date === dateString);
-    dateObject.startTime = session.createdAt.toISOString().split('T')[1] || null;
-    dateObject.endTime = session.updatedAt.toISOString().split('T')[1] || null;
+    dateObject.startTime = session.createdAt
+    dateObject.endTime = session.updatedAt
     if (dateObject) {
       dateObject.sessionMarked = true;
 

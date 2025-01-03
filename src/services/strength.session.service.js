@@ -60,7 +60,6 @@ const checkAndLogBestSession = async session => {
   }
   return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
 };
-
 const getUserBestSessions = async (userId, query, populateConfig) => {
   const data = await getAllData(StrengthBestSession, {...query, userId}, populateConfig);
   return data;
