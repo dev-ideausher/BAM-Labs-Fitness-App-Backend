@@ -18,6 +18,7 @@ const contactUsRoute = require('./contactUs.route');
 const trackerRoute = require('./admin.tracker.route');
 const uploadRoute = require('./upload.route');
 const contentRoute = require('./content.route');
+const notificationRoute = require('./notification.route');
 
 const router = express.Router();
 
@@ -43,5 +44,6 @@ router.use('/admin/users', adminUserRoute);
 router.use('/admin/tracker', trackerRoute);
 router.use('/contact-us', contactUsRoute);
 router.use('/content', contentRoute);
+router.use('/notification', notificationRoute);
 
 module.exports = router;

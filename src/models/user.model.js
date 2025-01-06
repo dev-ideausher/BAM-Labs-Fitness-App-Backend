@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema(
       },
       default: null,
     },
+    bodyImage:{
+      type:[{pose:{type:String, enum:["front", "back", "left", "right"], required:true}, file:{key:{type:String, required:true}, url:{type:String, required:true}}}],
+      required:false
+    },
     firebaseUid: {
       type: String,
       required: true,

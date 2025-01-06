@@ -13,3 +13,5 @@ exports.userHabitLogService = require('./user.habit.session');
 exports.adminAuthService = require('./admin.auth.service');
 exports.contactUsService = require('./contactUs.service');
 exports.trackerService = require('./admin.tracker.service');
+exports.notificationService = require('./notification.service');
+

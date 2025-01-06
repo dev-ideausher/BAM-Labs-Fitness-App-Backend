@@ -17,7 +17,8 @@ const getUserbyId = catchAsync(async (req, res) => {
 });
 
 const updateUser = catchAsync(async (req, res) => {
-  const updatedUser = await userService.updateUserById(req.user._id, req.body, req.file);
+  console.log(req.user)
+  const updatedUser = await userService.updateUserById(req.user._id, req.body);
   res.status(200).send({data: updatedUser, message: 'Your details are updated'});
 });
 
