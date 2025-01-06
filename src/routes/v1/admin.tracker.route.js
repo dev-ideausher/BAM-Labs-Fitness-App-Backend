@@ -19,6 +19,7 @@ router.get('/category/:id', authenticate, trackerController.getSpecificCategory)
 router.patch('/update/muscle/', authenticate, validate(strengthContentValidation.updateMuscleExcerciseValidation), trackerController.updateMuscleExcercise);
 router.put("/delete/muscle/:id", authenticate, trackerController.deleteMuscle);
 router.put("/delete/excercise/:id", authenticate, trackerController.deleteExcercise);
+router.put("/delete/:id", authenticate, trackerController.deleteStrengthContent);
 
 
 // content management part for updating video only
