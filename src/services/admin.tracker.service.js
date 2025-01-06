@@ -8,7 +8,7 @@ const getStrengthContent = async () => {
     const data = await PrimaryCategory.find({isDeleted:false});
     const updatedData = await Promise.all(
         data.map(async (item) => {
-          const muscles = await TargetedMuscle.find({ primaryCategory: item._id }).select("targetedMuscle");
+          const muscles = await TargetedMuscle.find({ primaryCategory: item._id , isDeleted:false}).select("targetedMuscle");
           return { ...item.toObject(), muscles }; // Use `.toObject()` to ensure the result is a plain object
         })
       );
@@ -39,6 +39,12 @@ const deleteHabit = async ({id}) => {
     return habit;
 }
 
+const deleteStrengthContent = async ({id}) => {
+    const strengthContent = await PrimaryCategory.updateOne({_id:id}, {isDeleted:true}, {new:true});
+    const targetedMuscle = await TargetedMuscle.updateMany({primaryCategory:id}, {isDeleted:true});
+    const excercise = await StrengthExercise.updateMany({primaryCategory:id}, {isDeleted:true});
+    return strengthContent;
+}
 
 // create new strength content
 const createStrengthContent = async (data) => {
@@ -101,11 +107,11 @@ const createStrengthContent = async (data) => {
 
 
 const getSpecificCategory = async (id) => {
-    const primaryCategory = await PrimaryCategory.findOne({ _id: id });
-    const targetedMuscles = await TargetedMuscle.find({ primaryCategory: primaryCategory._id });
+    const primaryCategory = await PrimaryCategory.findOne({ _id: id , isDeleted:false});
+    const targetedMuscles = await TargetedMuscle.find({ primaryCategory: primaryCategory._id , isDeleted:false});
     let res = [];
     for (const muscle of targetedMuscles) {
-        const excercizes = await StrengthExercise.find({ targetedMuscle: muscle._id });
+        const excercizes = await StrengthExercise.find({ targetedMuscle: muscle._id, isDeleted:false });
         res.push({ muscle, excercizes });
     }
     return res;
@@ -163,5 +169,6 @@ module.exports = {
     updateMuscleExcercise,
     deleteMuscle,   
     deleteExcercise,
-    updateVideo
+    updateVideo,
+    deleteStrengthContent
 }

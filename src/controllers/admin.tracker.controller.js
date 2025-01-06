@@ -106,6 +106,16 @@ const deleteExcercise = catchAsync(async (req, res) => {
     });
 });
 
+const deleteStrengthContent = catchAsync(async (req, res) => {
+    const {id} = req.params;
+    const strengthContent = await trackerService.deleteStrengthContent({id});
+    res.status(200).json({
+        status: true,
+        message: 'Strength content deleted successfully',
+        data: strengthContent
+    });
+});
+
 
 const updateVideo = catchAsync(async (req, res) => {
     const {excerciseId} = req.params;
@@ -130,5 +140,6 @@ module.exports = {
     updateMuscleExcercise,
     deleteMuscle,
     deleteExcercise,
-    updateVideo
+    updateVideo,
+    deleteStrengthContent
 }
