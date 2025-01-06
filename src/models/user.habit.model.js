@@ -54,7 +54,27 @@ const userHabitSchma = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    notificationToggle: {
+      type: Boolean,
+      default: false,
+    },
+    customNotificationTimes: {
+      type: [Date],
+      validate: {
+        validator: function(times) {
+          return times.every(time => !isNaN(new Date(time).getTime()));
+        },
+        message: 'Each time in customNotificationTimes must be a valid timestamp.',
+      },
+    },
+
+    customNotificationCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
+
   {timestamps: true}
 );
 

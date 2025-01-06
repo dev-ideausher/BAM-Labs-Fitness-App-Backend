@@ -68,11 +68,11 @@ const createStrengthContent = catchAsync(async (req, res) => {
 
 const getSpecificCategory = catchAsync(async (req, res) => {
     const {id} = req.params;
-    const strengthContent = await trackerService.getSpecificCategory(id);
+    const data = await trackerService.getSpecificCategory(id);
     res.status(200).json({
         status: true,
         message: 'Strength content fetched successfully',
-        strengthContent
+        data:data
     });
 });
 

@@ -4,7 +4,18 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 
 const validateHabitData = reqBody => {
-  const {taskType, taskDays, specificWeekdays, weeklyCount, monthlyCount, numberOfTimes, customTimes} = reqBody;
+  const {
+    taskType,
+    taskDays,
+    specificWeekdays,
+    weeklyCount,
+    monthlyCount,
+    numberOfTimes,
+    customTimes,
+    notificationToggle,
+    customNotificationTimes,
+    customNotificationCount,
+  } = reqBody;
 
   // Initialize a new habit object to return
   const validHabit = {
@@ -16,7 +27,22 @@ const validateHabitData = reqBody => {
     customTimes,
     notificaions: reqBody.notifications,
     customReminder: reqBody.customReminder,
+    notificationToggle,
+    customNotificationTimes,
+    customNotificationCount,
   };
+
+  if (customNotificationTimes && !Array.isArray(customNotificationTimes)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationTimes must be an array.');
+  }
+
+  if (customNotificationTimes && customNotificationTimes.some(time => isNaN(new Date(time).getTime()))) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Each time in customNotificationTimes must be a valid timestamp.');
+  }
+
+  if (typeof customNotificationCount !== 'number' || customNotificationCount < 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationCount must be a non-negative number.');
+  }
 
   // Validate taskType and taskDays consistency
   if (taskType === 'daily') {
@@ -97,11 +123,11 @@ const getUserHabit = catchAsync(async (req, res) => {
 
 const getUserHabits = catchAsync(async (req, res) => {
   const habits = await userHabitService.getUserHabits(req.user._id, req.query, [{path: 'habitId'}]);
-  console.log(habits)
+  console.log(habits);
   const enrichedHabits = await Promise.all(
-    habits.results.map(async (data) => {
+    habits.results.map(async data => {
       const habitPerformed = await userHabitLogService.getHabitCompletionCount(data.habitId, req.user._id);
-      return { ...data, habitPerformed }; // Use `toObject` to convert Mongoose objects if needed
+      return {...data, habitPerformed}; // Use `toObject` to convert Mongoose objects if needed
     })
   );
   habits.results = enrichedHabits;
