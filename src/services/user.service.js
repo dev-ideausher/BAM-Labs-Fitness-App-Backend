@@ -25,25 +25,18 @@ async function getUsers(filters, options) {
 async function updateUserById(id, newDetails) {
   const user = await User.findById(id);
   userValidator(user);
-  let updates = {...newDetails};
-  if (profileImage) {
-    const [profilePic] = await fileUploadService.s3Upload([profileImage], 'profilePics').catch(err => {
-      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to upload profile picture');
-    });
-    if (user.profilePic) {
-      const oldPicKey = user.profilePic.key;
-      await fileUploadService
-        .s3Delete(oldPicKey)
-        .catch(err => console.log('Failed to delete profile picture', oldPicKey));
-    }
-    updates = {...updates, profilePic};
-  }
+  user.bodyImage = newDetails?.bodyImage && newDetails.bodyImage.length > 0 ? newDetails.bodyImage : user.bodyImage;
+  user.profilePic = newDetails?.profilePic ? newDetails.profilePic : user.profilePic;
+  user.dob = newDetails?.dob ? newDetails.dob : user.dob;
+  user.phone = newDetails?.phone ? newDetails.phone : user.phone;
+  user.email = newDetails?.email ? newDetails.email : user.email;
+  user.name = newDetails?.name ? newDetails.name : user.name;
+  user.gender = newDetails?.gender ? newDetails.gender : user.gender;
+  user.weight = newDetails?.weight ? newDetails.weight : user.weight;
+  user.height = newDetails?.height ? newDetails.height : user.height;
+  const saved =await user.save();
+  return saved;
 
-  if (user.role === 'user') {
-    return await User.findByIdAndUpdate(id, updates, {new: true});
-  } else if (user.role === 'admin') {
-    return await User.findByIdAndUpdate(id, updates, {new: true});
-  }
 }
 
 async function deleteUserById(id) {

@@ -5,7 +5,7 @@ const {firebaseAuth} = require('../../middlewares/firebaseAuth');
 const userValidation = require('../../validations/user.validation');
 
 const {userController} = require('../../controllers');
-const {fileUploadService} = require('../../microservices');
+// const {fileUploadService} = require('../../microservices');
 
 const router = express.Router();
 
@@ -16,9 +16,7 @@ router.get('/:id', firebaseAuth('All'), userController.getUserbyId);
 // for updating userDetails
 router.patch(
   '/updateDetails',
-  fileUploadService.multerUpload.single('profilePic'),
-  firebaseAuth('All'),
-  validate(userValidation.updateDetails),
+  firebaseAuth('user'),
   userController.updateUser
 );
 

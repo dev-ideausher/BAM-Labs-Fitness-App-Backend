@@ -4,4 +4,5 @@ exports.appNotificationValidation = require('./appNotification.validation');
 exports.habitValidation = require('./habit.validation');
 exports.adminAuthValidation = require('./admin.auth.validation');
 exports.contactUsValidation = require('./contact.validation');
-exports.strengthContentValidation = require("./admin.tracker.validation")
+exports.strengthContentValidation = require("./admin.tracker.validation");
+exports.notificationValidation = require('./notification.validation');

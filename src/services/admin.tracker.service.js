@@ -5,7 +5,7 @@ const { PrimaryCategory, TargetedMuscle, Habit, StrengthExercise } = require("..
 const { getPaginateConfig } = require("../utils/queryPHandler");
 
 const getStrengthContent = async () => {
-    const data = await PrimaryCategory.find();
+    const data = await PrimaryCategory.find({isDeleted:false});
     const updatedData = await Promise.all(
         data.map(async (item) => {
           const muscles = await TargetedMuscle.find({ primaryCategory: item._id }).select("targetedMuscle");
