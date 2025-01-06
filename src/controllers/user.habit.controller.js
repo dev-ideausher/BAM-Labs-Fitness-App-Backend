@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const {userHabitService, userHabitLogService} = require('../services');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
+const {Habit} = require('../models');
 
 const validateHabitData = reqBody => {
   const {
@@ -21,6 +22,7 @@ const validateHabitData = reqBody => {
   const validHabit = {
     userId: reqBody.userId,
     habitId: reqBody.habitId,
+    habitName: reqBody.habitName,
     taskType,
     taskDays,
     numberOfTimes,
@@ -40,9 +42,9 @@ const validateHabitData = reqBody => {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Each time in customNotificationTimes must be a valid timestamp.');
   }
 
-  if (typeof customNotificationCount !== 'number' || customNotificationCount < 0) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationCount must be a non-negative number.');
-  }
+  // if (typeof customNotificationCount !== 'number' || customNotificationCount < 0) {
+  //   throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationCount must be a non-negative number.');
+  // }
 
   // Validate taskType and taskDays consistency
   if (taskType === 'daily') {
@@ -140,11 +142,21 @@ const getUserHabits = catchAsync(async (req, res) => {
 
 const updateUserHabit = catchAsync(async (req, res) => {
   const validHabit = await validateHabitData(req.body);
-  const habit = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+  
+  const habit = await Habit.findById(req.body.habitId);
+  if (!habit) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Habit not found');
+  }
+  if (req.body.habitName) {
+    await Habit.findByIdAndUpdate(req.body.habitId, { name: req.body.habitName });
+  }
+
+  const updatedHabit = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+  
   res.status(200).json({
     status: true,
     message: 'User habit updated successfully',
-    habit,
+    habit: updatedHabit,
   });
 });
 
