@@ -50,6 +50,19 @@ const updateMuscleExcerciseValidation = {
     })
 }
 
+const addExerciseValidation = {
+    body: Joi.object({
+        id: Joi.string().custom(objectId).required(),
+        name: Joi.string().required(),
+        video: Joi.object({
+            key: Joi.string().required(),
+            url: Joi.string().required(),
+        }).required(),
+        metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps")).required(),
+    }),
+};
+
+
 const updateVideoValidation = {
     body: Joi.object({
         video: Joi.object({
@@ -59,4 +72,4 @@ const updateVideoValidation = {
     })
 }
 
-module.exports = {createStrengthContentValidation, updateMuscleExcerciseValidation, updateVideoValidation};
+module.exports = {createStrengthContentValidation, updateMuscleExcerciseValidation, updateVideoValidation,addExerciseValidation};

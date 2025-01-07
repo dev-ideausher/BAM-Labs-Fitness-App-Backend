@@ -128,6 +128,16 @@ const updateVideo = catchAsync(async (req, res) => {
     });
 });
 
+const addExerciseForMuscle = catchAsync(async (req, res) => {
+    const { id, name, video, metrices } = req.body;
+    const exercise = await trackerService.addExerciseForMuscle({ id, name, video, metrices });
+    res.status(201).json({
+        status: true,
+        message: 'Exercise added successfully to the muscle',
+        exercise,
+    });
+});
+
 
 module.exports = {
     getStrengthContent,
@@ -141,5 +151,6 @@ module.exports = {
     deleteMuscle,
     deleteExcercise,
     updateVideo,
-    deleteStrengthContent
+    deleteStrengthContent,
+    addExerciseForMuscle
 }

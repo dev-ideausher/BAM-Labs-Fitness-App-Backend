@@ -2,8 +2,7 @@ const express = require('express');
 const { trackerController } = require('../../controllers');
 const { authenticate } = require('../../middlewares/adminAuth');
 const validate = require('../../middlewares/validate');
-const { strengthContentValidation } = require('../../validations');
-
+const { strengthContentValidation } = require('../../validations')
 
 const router = express.Router();
 
@@ -20,6 +19,7 @@ router.patch('/update/muscle/', authenticate, validate(strengthContentValidation
 router.put("/delete/muscle/:id", authenticate, trackerController.deleteMuscle);
 router.put("/delete/excercise/:id", authenticate, trackerController.deleteExcercise);
 router.put("/delete/:id", authenticate, trackerController.deleteStrengthContent);
+router.post('/muscle/exercise', authenticate ,validate(strengthContentValidation.addExerciseValidation), trackerController.addExerciseForMuscle);
 
 
 // content management part for updating video only

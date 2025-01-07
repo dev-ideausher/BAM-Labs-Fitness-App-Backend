@@ -158,6 +158,24 @@ const updateVideo = async (excerciseId, video) => {
     const strengthExercise = await StrengthExercise.findByIdAndUpdate(id, {video}, {new: true});
     return strengthExercise;
 }
+const addExerciseForMuscle = async ({ id, name, video, metrices }) => {
+    const muscle = await TargetedMuscle.findById(id);
+    if (!muscle) {
+        throw new Error('Targeted muscle not found');
+    }
+    const newExercise = new StrengthExercise({
+        exerciseName: name,
+        video,
+        metrices,
+        targetedMuscle: id,
+        primaryCategory: muscle.primaryCategory,
+    });
+
+    await newExercise.save();
+
+    return newExercise;
+};
+
 module.exports = {
     getStrengthContent,
     getSpecificCategory,
@@ -170,5 +188,6 @@ module.exports = {
     deleteMuscle,   
     deleteExcercise,
     updateVideo,
-    deleteStrengthContent
+    deleteStrengthContent,
+    addExerciseForMuscle
 }
