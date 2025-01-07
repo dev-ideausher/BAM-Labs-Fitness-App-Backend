@@ -16,3 +16,4 @@ exports.contactUsController = require('./contactUs.controller');
 exports.trackerController = require('./admin.tracker.controller');
 exports.contentController = require('./content.controller');
 exports.notificationController = require('./notification.controller');
+exports.adminDashboardController = require('./admindashboard.controller');

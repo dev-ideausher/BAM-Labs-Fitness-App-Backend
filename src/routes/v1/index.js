@@ -19,6 +19,7 @@ const trackerRoute = require('./admin.tracker.route');
 const uploadRoute = require('./upload.route');
 const contentRoute = require('./content.route');
 const notificationRoute = require('./notification.route');
+const adminDashboardRoute = require('./adminDashboard.route');
 
 const router = express.Router();
 
@@ -36,6 +37,7 @@ router.use('/habits', habitRoute);
 router.use('/user-habits', userHabitRoute);
 router.use('/user-habit-session', userHabitSessionRoute);
 router.use('/upload', uploadRoute);
+router.use('/admin/dashboard', adminDashboardRoute);
 
 
 // admin routes
