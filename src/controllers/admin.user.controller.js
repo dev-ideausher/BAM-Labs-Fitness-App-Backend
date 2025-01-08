@@ -10,7 +10,7 @@ const {StretchSession, CardioSession, StrengthSession} = require('../models');
 
 const getUsers = catchAsync(async (req, res) => {
   const {type} = req.params;
-  const {userId, name} = req.query;
+  const {search} = req.query;
   const {filters, options} = getPaginateConfig(req.query);
   options.project = {
     _id: 1,
@@ -35,17 +35,23 @@ const getUsers = catchAsync(async (req, res) => {
   } else {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid type');
   }
-  if (userId) {
-    const {Types} = require('mongoose');
-    if (Types.ObjectId.isValid(userId)) {
-      filters._id = new Types.ObjectId(userId);
+  if (search) {
+    if (filters.$or) {
+      
+      filters.$and = [
+        { $or: filters.$or },
+        { $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]}
+      ];
+      delete filters.$or;
     } else {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid userId');
+      filters.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
     }
-  }
-
-  if (name) {
-    filters.name = {$regex: name, $options: 'i'};
   }
 
   const sort = {[options.sortBy]: options.sortOrder === 'asc' ? 1 : -1};
@@ -132,29 +138,27 @@ const getUserDetails = catchAsync(async (req, res) => {
 });
 const getsessionDetails = async (req, res) => {
   try {
-    const {userId} = req.params;
-    const {page = 1, limit = 10} = req.query;
-    const skip = (page - 1) * limit;
+    const { userId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const parsedPage = parseInt(page);
+    const parsedLimit = parseInt(limit);
+    const skip = (parsedPage - 1) * parsedLimit;
 
-    const cardioSessions = await CardioSession.find({userId})
-      .select('dateTime createdAt')
-      .sort({dateTime: -1})
-      .skip(skip)
-      .limit(limit);
-
-    const strengthSessions = await StrengthSession.find({userId})
-      .select('dateTime createdAt')
-      .sort({dateTime: -1})
-      .skip(skip)
-      .limit(limit);
-
-    const stretchSessions = await StretchSession.find({userId})
-      .select('dateTime createdAt')
-      .sort({dateTime: -1})
-      .skip(skip)
-      .limit(limit);
-
-    const sessions = [
+    const [cardioSessions, strengthSessions, stretchSessions] = await Promise.all([
+      CardioSession.find({ userId })
+        .select('dateTime createdAt')
+        .sort({ dateTime: -1 })
+        .lean(),
+      StrengthSession.find({ userId })
+        .select('dateTime createdAt')
+        .sort({ dateTime: -1 })
+        .lean(),
+      StretchSession.find({ userId })
+        .select('dateTime createdAt')
+        .sort({ dateTime: -1 })
+        .lean()
+    ]);
+    const allSessions = [
       ...cardioSessions.map(session => ({
         sessionName: 'Cardio',
         sessionDate: session.dateTime,
@@ -169,22 +173,19 @@ const getsessionDetails = async (req, res) => {
         sessionName: 'Stretch',
         sessionDate: session.dateTime,
         timestamp: session.createdAt,
-      })),
+      }))
     ];
-
-    const totalResults =
-      (await CardioSession.countDocuments({userId})) +
-      (await StrengthSession.countDocuments({userId})) +
-      (await StretchSession.countDocuments({userId}));
-
-    const totalPages = Math.ceil(totalResults / limit);
+    allSessions.sort((a, b) => b.sessionDate - a.sessionDate);
+    const totalResults = allSessions.length;
+    const totalPages = Math.ceil(totalResults / parsedLimit);
+    const paginatedSessions = allSessions.slice(skip, skip + parsedLimit);
 
     const response = {
       status: true,
       data: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        results: sessions,
+        page: parsedPage,
+        limit: parsedLimit,
+        results: paginatedSessions,
         totalResults,
         totalPages,
       },
