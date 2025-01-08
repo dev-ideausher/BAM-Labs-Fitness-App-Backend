@@ -168,10 +168,22 @@ const deleteUserHabit = catchAsync(async (req, res) => {
   });
 });
 
+const restoreHabitStreak = catchAsync(async (req, res) => {
+  const { userHabitId } = req.params;
+  const restoredStreak = await userHabitService.restoreHabitStreak(userHabitId, req.user._id);
+  
+  res.status(200).json({
+    status: true,
+    message: 'Habit streak restored successfully',
+    data: restoredStreak
+  });
+});
+
 module.exports = {
   createUserHabit,
   getUserHabit,
   getUserHabits,
   updateUserHabit,
   deleteUserHabit,
+  restoreHabitStreak,
 };

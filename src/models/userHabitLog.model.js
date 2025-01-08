@@ -16,9 +16,9 @@ const userHabitLogSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    counterForDay:{
-        type:Number,
-        default:1
+    counterForDay: {
+      type: Number,
+      default: 1,
     },
     status: {
       type: String,
@@ -26,11 +26,14 @@ const userHabitLogSchema = new mongoose.Schema(
       required: true,
       default: 'completed',
     },
-
+    isRestored: {
+      type: Boolean,
+      default: false,
+    },
   },
-  { timestamps: true }
+  {timestamps: true}
 );
 
 const UserHabitLog = mongoose.model('UserHabitLog', userHabitLogSchema);
 
-module.exports = { UserHabitLog };
+module.exports = {UserHabitLog};

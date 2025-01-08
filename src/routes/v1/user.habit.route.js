@@ -15,4 +15,6 @@ router.patch('/:userHabitId', firebaseAuth('All'), userHabitController.updateUse
 
 router.delete('/:userHabitId', firebaseAuth('All'), userHabitController.deleteUserHabit);
 
+router.post('/restore-streak/:userHabitId',firebaseAuth('All'), userHabitController.restoreHabitStreak);
+
 module.exports = router;
