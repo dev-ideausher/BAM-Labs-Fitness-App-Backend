@@ -14,11 +14,11 @@ const createNotification = catchAsync(async (req, res) => {
 });
 const getAllNotifications = catchAsync(async (req, res) => {
     const {filters, options} = getPaginateConfig(req.query);
-    const notifications = await notificationService.getAllNotifications(filters, options);
+    const data = await notificationService.getAllNotifications(filters, options);
     res.status(200).json({
         status: true,
         message: 'Notifications fetched successfully',
-        notifications
+        data
     });
 });
 
