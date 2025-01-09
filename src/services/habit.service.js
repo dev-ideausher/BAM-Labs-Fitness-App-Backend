@@ -10,7 +10,17 @@ const createCustomHabit = async habit => {
 };
 
 const getAllHabits = async (query, populateConfig) => {
-  const data = await getAllData(Habit, query, populateConfig);
+  const { userId, ...otherQuery } = query;
+  
+  const data = await getAllData(Habit, {
+    $or: [
+      { __t: null },
+      { __t: 'CustomHabit', userId },
+      { __t: 'CustomHabit', publicVisibility: true } 
+    ],
+    ...otherQuery
+  }, populateConfig);
+  
   return data;
 };
 

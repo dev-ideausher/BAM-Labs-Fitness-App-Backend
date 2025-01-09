@@ -20,7 +20,7 @@ const addCustomHabit = catchAsync(async (req, res) => {
 });
 
 const getAllHabits = catchAsync(async (req, res) => {
-  const habits = await habitService.getAllHabits(req.query, []);
+  const habits = await habitService.getAllHabits({ ...req.query, userId: req.user._id }, []);
   const customHabits = await habitService.getMyHabits(req.user._id, req.query, []);
   res.status(200).json({
     status: true,
