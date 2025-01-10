@@ -34,9 +34,57 @@ async function updateUserById(id, newDetails) {
   user.gender = newDetails?.gender ? newDetails.gender : user.gender;
   user.weight = newDetails?.weight ? newDetails.weight : user.weight;
   user.height = newDetails?.height ? newDetails.height : user.height;
-  const saved =await user.save();
-  return saved;
+  if (newDetails?.age !== undefined) {
+    const currentAge = user.age;
+    if (currentAge && Math.abs(currentAge - newDetails.age) > 1) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        'Age change exceeds reasonable limit. Please contact support if this is incorrect.'
+      );
+    }
+    user.age = newDetails.age;
+    const today = new Date();
+    user.dob = new Date(today.getFullYear() - newDetails.age, today.getMonth(), today.getDate());
+  } else if (user.dob) {
+    user.age = calculateAge(user.dob);
+  }
+  recalculateMetrics(user);
 
+  const saved = await user.save();
+  return saved;
+}
+function calculateAge(dob) {
+  const currentDate = new Date();
+  const birthDate = new Date(dob);
+  let age = currentDate.getFullYear() - birthDate.getFullYear();
+  const monthDifference = currentDate.getMonth() - birthDate.getMonth();
+  if (monthDifference < 0 || (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function recalculateMetrics(user) {
+  if (user.weight && user.height) {
+    const heightInMeters = user.height / 100;
+    user.bmi = user.weight / heightInMeters ** 2;
+  } else {
+    user.bmi = null;
+  }
+
+  if (user.gender && user.bmi && user.age) {
+    if (user.gender === 'male') {
+      user.bodyFat = 1.2 * user.bmi + 0.23 * user.age - 16.2;
+    } else if (user.gender === 'female') {
+      user.bodyFat = 1.2 * user.bmi + 0.23 * user.age - 5.4;
+    } else if (user.gender === 'other') {
+      user.bodyFat = 1.2 * user.bmi + 0.23 * user.age - 10.8;
+    } else {
+      user.bodyFat = null;
+    }
+  } else {
+    user.bodyFat = null;
+  }
 }
 
 async function deleteUserById(id) {
@@ -64,5 +112,5 @@ module.exports = {
   getUserById,
   updateUserById,
   deleteUserById,
-  updatePreferencesById,
+  updatePreferencesById
 };

@@ -43,6 +43,33 @@ const deleteUser = catchAsync(async (req, res) => {
   res.status(200).send({message: 'The user deletion process has been completed successfully.'});
 });
 
+const updateUserMetrics = catchAsync(async (req, res) => {
+  const { weight, height, age } = req.body;
+
+  if (age !== undefined) {
+    if (typeof age !== 'number' || !Number.isInteger(age)) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Age must be a whole number');
+    }
+    if (age < 10 || age > 120) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Age must be between 10 and 120 years');
+    }
+  }
+  const updatedUser = await userService.updateUserById(req.user._id, {
+    weight,
+    height,
+    age,
+  });
+  if (!updatedUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  res.status(httpStatus.OK).send({
+    status: true,
+    data: updatedUser,
+    message: 'User metrics updated successfully',
+  });
+});
+
+
 module.exports = {
   getAllUsers,
   getUserbyId,
@@ -50,4 +77,5 @@ module.exports = {
   updateUser,
   softDeleteUser,
   updatePreferences,
+  updateUserMetrics,
 };

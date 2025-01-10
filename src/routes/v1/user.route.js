@@ -33,5 +33,6 @@ router.delete('/:userId', validate(userValidation.deleteUser), firebaseAuth('adm
 
 // to soft delete a user
 router.post('/delete/:userId', validate(userValidation.deleteUser), firebaseAuth('All'), userController.softDeleteUser);
+router.patch('/metrics', firebaseAuth('All'), userController.updateUserMetrics);
 
 module.exports = router;
