@@ -43,8 +43,12 @@ async function updateUserById(id, newDetails) {
       );
     }
     user.age = newDetails.age;
+    let birthMonth = user.dob ? user.dob.getUTCMonth() : 0;
+    let birthDay = user.dob ? user.dob.getUTCDate() : 1;
+
     const today = new Date();
-    user.dob = new Date(today.getFullYear() - newDetails.age, today.getMonth(), today.getDate());
+    const birthYear = today.getUTCFullYear() - newDetails.age;
+    user.dob = new Date(Date.UTC(birthYear, birthMonth, birthDay));
   } else if (user.dob) {
     user.age = calculateAge(user.dob);
   }
@@ -112,5 +116,5 @@ module.exports = {
   getUserById,
   updateUserById,
   deleteUserById,
-  updatePreferencesById
+  updatePreferencesById,
 };
