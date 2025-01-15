@@ -19,4 +19,6 @@ router.get('/maps/:exerciseId', firebaseAuth('user'), strengthSessionController.
 router.get('/maps/dated/:exerciseId', firebaseAuth('user'), strengthSessionController.getDatedStrengthMaps);
 
 router.get('/weight/graph/:exerciseId', firebaseAuth('user'), strengthSessionController.getAvgWeightPerMonthByExcercize);
+router.get('/newmap', firebaseAuth('user'), strengthSessionController.getDatedStrengthMap);
+
 module.exports = router;

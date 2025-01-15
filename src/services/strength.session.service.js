@@ -3,9 +3,23 @@ const {StrengthSession, StrengthBestSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
 const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
 
-const logStrengthSession = async strengthSession => {
+const logStrengthSession = async (strengthSession) => {
+  const { userId, exerciseId, dateTime } = strengthSession;
+  const existingSession = await StrengthSession.findOne({
+    userId,
+    exerciseId,
+    dateTime: {
+      $gte: new Date(new Date(dateTime).setHours(0, 0, 0, 0)),
+      $lt: new Date(new Date(dateTime).setHours(23, 59, 59, 999)),
+    },
+  });
+
+  if (existingSession) {
+    throw new Error('You have already logged a session for this exercise today');
+  }
   return await StrengthSession.create(strengthSession);
 };
+
 
 const getAllSessions = async (query, populateConfig) => {
   const data = await getAllData(StrengthSession, query, populateConfig);
@@ -76,6 +90,19 @@ const getWeeklyStrengthMap = async (userId, exerciseId) => {
 const getMonthlyStrengthMap = async (userId, exerciseId, year, month) => {
   return await getMonthlySessionsMap(StrengthSession, {userId, exerciseId}, year, month);
 };
+const getDatedStrengthSessionsMapp = async (userId, startDate, endDate, exerciseIds = []) => {
+  const query = {
+    userId,
+    dateTime: { $gte: startDate, $lte: endDate },
+  };
+
+  if (exerciseIds.length > 0) {
+    query.exerciseId = { $in: exerciseIds };
+  }
+
+  return await getMapsByDate(StrengthSession, query, startDate, endDate);
+};
+
 
 const getDatedStrengthMap = async (userId, exerciseId, startDate, endDate) => {
   return await getMapsByDate(StrengthSession, {userId, exerciseId}, startDate, endDate);
@@ -145,5 +172,6 @@ module.exports = {
   getMonthlyStrengthMap,
   getDatedStrengthMap,
   calculateMonthlyAvgWeight,
-  getSessionByDate
+  getSessionByDate,
+  getDatedStrengthSessionsMapp
 };

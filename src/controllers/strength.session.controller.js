@@ -1,19 +1,27 @@
 const {strengthSessionService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
+const {StrengthExercise,PrimaryCategory} = require('../models');
 
 const logSession = catchAsync(async (req, res) => {
-  const session = await strengthSessionService.logStrengthSession({...req.body, userId: req.user._id});
-  const data = await strengthSessionService.checkAndLogBestSession({
-    ...session,
-    sessionId: session._id,
-    userId: req.user._id,
-  });
-  res.status(200).json({
-    status: true,
-    message: 'Session logged successfully',
-    session,
-    bestSession: data,
-  });
+  try {
+    const session = await strengthSessionService.logStrengthSession({ ...req.body, userId: req.user._id });
+    const data = await strengthSessionService.checkAndLogBestSession({
+      ...session,
+      sessionId: session._id,
+      userId: req.user._id,
+    });
+    res.status(200).json({
+      status: true,
+      message: 'Session logged successfully',
+      session,
+      bestSession: data,
+    });
+  } catch (error) {
+    if (error.message === 'You have already logged a session for this exercise today') {
+      return res.status(400).json({ status: false, message: error.message });
+    }
+    res.status(500).json({ status: false, message: 'Internal server error', error: error.message });
+  }
 });
 
 const getMySessions = catchAsync(async (req, res) => {
@@ -85,6 +93,41 @@ const getAvgWeightPerMonthByExcercize = catchAsync(async (req, res) => {
   });
 })
 
+const getDatedStrengthMap = catchAsync(async (req, res) => {
+  const { startDate, endDate, primaryExercise } = req.query;
+  const userId = req.user._id;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start date and end date are required' });
+  }
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  let datedMap;
+  if (primaryExercise) {
+    const primaryCategory = await PrimaryCategory.findOne({ categoryName: primaryExercise });
+
+    if (!primaryCategory) {
+      return res.status(404).json({ message: 'Primary exercise category not found' });
+    }
+    const exercises = await StrengthExercise.find({
+      primaryCategory: primaryCategory._id,
+      isDeleted: false,
+    });
+
+    const exerciseIds = exercises.map(ex => ex._id);
+    datedMap = await strengthSessionService.getDatedStrengthSessionsMapp(userId, start, end, exerciseIds);
+  } else {
+    datedMap = await strengthSessionService.getDatedStrengthSessionsMapp(userId, start, end);
+  }
+
+  res.status(200).json({
+    status: true,
+    message: 'Dated Strength map fetched successfully',
+    datedMap,
+  });
+});
+
+
 module.exports = {
   logSession,
   getMySessions,
@@ -92,5 +135,6 @@ module.exports = {
   getStrengthMaps,
   getDatedStrengthMaps,
   getAvgWeightPerMonthByExcercize,
-  getSessionByDate
+  getSessionByDate,
+  getDatedStrengthMap,
 };
