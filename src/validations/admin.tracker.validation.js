@@ -14,8 +14,8 @@ const createStrengthContentValidation = {
                 excercizes: Joi.array().items(
                     Joi.object({
                         video: Joi.object({
-                            key: Joi.string().required(),
-                            url: Joi.string().required()
+                            key: Joi.string().optional(),
+                            url: Joi.string().optional()
                         }).optional(),
                         name: Joi.string().required(),
                         metrices: Joi.array()
