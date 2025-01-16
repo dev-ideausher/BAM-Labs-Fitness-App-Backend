@@ -296,6 +296,48 @@ const getUserPreferredTime = userHabit => {
   return defaultTime;
 };
 
+const getHabitStatistics = async (userId) => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const userHabits = await UserHabit.find({ userId });
+  
+  const habitLogs = await UserHabitLog.find({
+    userId,
+    dateTime: { $gte: thirtyDaysAgo }
+  });
+
+  const activeHabitIds = [...new Set(habitLogs.map(log => log.userHabitId.toString()))];
+  const activeHabits = activeHabitIds.length;
+
+  const habitStats = await Promise.all(
+    userHabits.map(habit => calculateStats(habit))
+  );
+  const averageCompletionRate = habitStats.reduce((sum, stat) => sum + stat.completionRate, 0) / 
+    (habitStats.length || 1);
+
+  const bestStreak = Math.max(...habitStats.map(stat => stat.bestStreak));
+  const uniqueDays = [...new Set(
+    habitLogs.map(log => new Date(log.dateTime).toDateString())
+  )].length;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const habitsCompletedToday = await UserHabitLog.countDocuments({
+    userId,
+    dateTime: { $gte: today },
+    status: 'completed'
+  });
+
+  return {
+    activeHabits,
+    averageCompletionRate: Math.round(averageCompletionRate * 10) / 10,
+    bestStreak,
+    ActiveDays: uniqueDays,
+    habitsCompletedToday
+  };
+};
+
 module.exports = {
   createUserHabit,
   getUserHabit,
@@ -303,4 +345,5 @@ module.exports = {
   updateUserHabit,
   deleteUserHabit,
   restoreHabitStreak,
+  getHabitStatistics,
 };

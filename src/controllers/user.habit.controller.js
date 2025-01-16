@@ -179,6 +179,16 @@ const restoreHabitStreak = catchAsync(async (req, res) => {
   });
 });
 
+const getHabitStats = catchAsync(async (req, res) => {
+  const stats = await userHabitService.getHabitStatistics(req.user._id);
+  
+  res.status(200).json({
+    status: true,
+    message: 'Habit statistics retrieved successfully',
+    stats
+  });
+});
+
 module.exports = {
   createUserHabit,
   getUserHabit,
@@ -186,4 +196,5 @@ module.exports = {
   updateUserHabit,
   deleteUserHabit,
   restoreHabitStreak,
+  getHabitStats,
 };

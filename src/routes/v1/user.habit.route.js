@@ -8,6 +8,7 @@ const router = express.Router();
 router.post('/', firebaseAuth('All'), userHabitController.createUserHabit);
 
 router.get('/', firebaseAuth('All'), userHabitController.getUserHabits);
+router.get('/habbit-stats', firebaseAuth('All'), userHabitController.getHabitStats);
 
 router.get('/:userHabitId', firebaseAuth('All'), userHabitController.getUserHabit);
 
