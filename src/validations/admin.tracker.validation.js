@@ -57,7 +57,7 @@ const addExerciseValidation = {
         video: Joi.object({
             key: Joi.string().required(),
             url: Joi.string().required(),
-        }).required(),
+        }).optional(),
         metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps")).required(),
     }),
 };
