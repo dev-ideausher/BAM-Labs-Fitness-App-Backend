@@ -25,6 +25,11 @@ router.post(
   authController.registerUser
 );
 
+router.post(
+  '/register-user',
+  authController.registerUserFromAdmin
+);
+
 router.post('/generate-token/:uid', generateToken);
 
 module.exports = router;

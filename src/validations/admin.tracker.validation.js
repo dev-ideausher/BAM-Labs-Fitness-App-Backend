@@ -45,7 +45,7 @@ const updateMuscleExcerciseValidation = {
             key: Joi.string().required(),
 
             url: Joi.string().required()
-        }),
+        }).optional(),
         metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps"))
     })
 }
@@ -68,7 +68,7 @@ const updateVideoValidation = {
         video: Joi.object({
             key: Joi.string().required(),
             url: Joi.string().required()
-        }).required()
+        }).optional()
     })
 }
 
