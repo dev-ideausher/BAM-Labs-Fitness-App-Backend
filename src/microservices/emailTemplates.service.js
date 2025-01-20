@@ -1,4 +1,4 @@
-exports.getWelcomeEmailTemplate = ({ name, email, password }) => `
+const getWelcomeEmailTemplate = ({ name, email, password }) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -121,4 +121,5 @@ const getForgotPasswordEmailTemplate = (resetLink) => `
 
 module.exports = {
   getForgotPasswordEmailTemplate,
+  getWelcomeEmailTemplate,
 };
