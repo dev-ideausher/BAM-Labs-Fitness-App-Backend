@@ -38,6 +38,9 @@ const envVarsSchema = Joi.object()
     SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL: Joi.string().required(),
     SERVICE_ACCOUNT_CLIENT_X509_CERT_URL: Joi.string().required(),
     SERVICE_ACCOUNT_UNIVERSE_DOMAIN: Joi.string().required(),
+    
+  RESEND_API_KEY: Joi.string().required(),
+  RESEND_FROM_EMAIL: Joi.string().email().required(),
   })
   .unknown();
 
@@ -95,5 +98,9 @@ module.exports = {
     auth_provider_x509_cert_url: envVars.SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL,
     client_x509_cert_url: envVars.SERVICE_ACCOUNT_CLIENT_X509_CERT_URL,
     universe_domain: envVars.SERVICE_ACCOUNT_UNIVERSE_DOMAIN,
+  },
+  resend: {
+    apiKey: envVars.RESEND_API_KEY,
+    fromEmail: envVars.RESEND_FROM_EMAIL,
   },
 };

@@ -27,6 +27,7 @@ router.post(
 
 router.post(
   '/register-user',
+  validate(authValidation.registeruserValidation),
   authController.registerUserFromAdmin
 );
 

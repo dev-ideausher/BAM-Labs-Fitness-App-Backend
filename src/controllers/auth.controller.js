@@ -1,6 +1,9 @@
 const {authService, userService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const admin = require('firebase-admin');
+const {sendEmail} = require('../microservices/mail.service');
+const { getWelcomeEmailTemplate } = require('../microservices/emailTemplates.service');
+
 const createNewUserObject = newUser => ({
   email: newUser.email,
   firebaseUid: newUser.uid,
@@ -37,7 +40,7 @@ const registerUser = catchAsync(async (req, res) => {
 });
 
 const registerUserFromAdmin = catchAsync(async (req, res) => {
-  const {email, password, role, ...otherDetails} = req.body;
+  const { email, password, role, ...otherDetails } = req.body;
 
   try {
     const firebaseUser = await admin.auth().createUser({
@@ -46,9 +49,11 @@ const registerUserFromAdmin = catchAsync(async (req, res) => {
       emailVerified: true,
       disabled: false,
     });
+
     await admin.auth().setCustomUserClaims(firebaseUser.uid, {
       role: role || 'user',
     });
+
     const userObj = {
       firebaseUid: firebaseUser.uid,
       email: firebaseUser.email,
@@ -57,12 +62,25 @@ const registerUserFromAdmin = catchAsync(async (req, res) => {
       isEmailVerified: true,
       ...otherDetails,
     };
+
     const newUser = await authService.createUser(userObj);
+
+    const emailData = {
+      to: email,
+      subject: 'Welcome to [Your Platform Name]',
+      html: getWelcomeEmailTemplate({
+        name: otherDetails.name,
+        email,
+        password,
+      }),
+    };
+
+    await sendEmail(emailData);
 
     return res.status(201).send({
       status: true,
       data: newUser,
-      message: 'User registered successfully',
+      message: 'User registered successfully, credentials sent via email',
     });
   } catch (error) {
     return res.status(500).send({
