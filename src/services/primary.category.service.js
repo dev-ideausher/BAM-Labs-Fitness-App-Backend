@@ -5,7 +5,7 @@ const createPrimaryCategory = async primaryCategory => {
 };
 
 const getAllPrimaryCategories = async () => {
-  return await PrimaryCategory.find();
+  return await PrimaryCategory.find({isDeleted: false});
 };
 
 const getPrimaryCategoryById = async id => {
