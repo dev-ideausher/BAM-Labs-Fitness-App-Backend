@@ -123,7 +123,8 @@ const getDatedStrengthMap = catchAsync(async (req, res) => {
   res.status(200).json({
     status: true,
     message: 'Dated Strength map fetched successfully',
-    datedMap,
+    // datedMap,
+    monthlyMap: datedMap,
   });
 });
 
