@@ -269,6 +269,7 @@ const getExerciseStats = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const primaryCategory = await PrimaryCategory.findOne({
     categoryName: primaryExercise,
+    isDeleted: false
   });
 
   if (!primaryCategory) {
