@@ -10,13 +10,32 @@ const addHabit = catchAsync(async (req, res) => {
   });
 });
 
+// const addCustomHabit = catchAsync(async (req, res) => {
+//   const habit = await habitService.createCustomHabit({userId: req.user._id, ...req.body});
+//   res.status(200).json({
+//     status: true,
+//     message: 'Custom habit added successfully',
+//     habit,
+//   });
+// });
 const addCustomHabit = catchAsync(async (req, res) => {
-  const habit = await habitService.createCustomHabit({userId: req.user._id, ...req.body});
-  res.status(200).json({
-    status: true,
-    message: 'Custom habit added successfully',
-    habit,
-  });
+  try {
+    const habit = await habitService.createCustomHabit({
+      userId: req.user._id, 
+      ...req.body
+    });
+
+    res.status(201).json({
+      status: true,
+      message: 'Custom habit added successfully',
+      habit,
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: false,
+      message: error.message
+    });
+  }
 });
 
 const getAllHabits = catchAsync(async (req, res) => {

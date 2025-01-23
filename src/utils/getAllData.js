@@ -6,7 +6,11 @@ async function getAllData(model, query, populateConfig) {
   const limit = query.limit && parseInt(query.limit, 10) > 0 ? parseInt(query.limit, 10) : 10;
 
   // let dataQuery = model.find({});
-  let dataQuery = model.find({ isDeleted: false });
+  // let dataQuery = model.find({ isDeleted: false });
+  const hasIsDeletedField = model.schema && model.schema.paths.hasOwnProperty('isDeleted');
+  let dataQuery = hasIsDeletedField 
+    ? model.find({ isDeleted: false }) 
+    : model.find({});
 
   // Apply population dynamically based on the provided configuration
   if (populateConfig) {
@@ -26,7 +30,11 @@ async function getAllData(model, query, populateConfig) {
   data = await data.query.lean(); // Fix: use the result of the chained methods
 
   // const totalResults = await filteredResults(model, query);
-  const totalResults = await filteredResults(model, { ...query, isDeleted: false });
+  // const totalResults = await filteredResults(model, { ...query, isDeleted: false });
+  const totalResultsQuery = hasIsDeletedField 
+  ? { ...query, isDeleted: false } 
+  : query;
+const totalResults = await filteredResults(model, totalResultsQuery);
   const totalPages = Math.ceil(totalResults / limit);
   
   return {

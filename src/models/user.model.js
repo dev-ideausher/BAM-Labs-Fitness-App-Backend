@@ -43,11 +43,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
+      unique: true,
     },
     email: {
       type: String,
       trim: true,
       required: true,
+      unique: true,
     },
     profilePic: {
       type: {

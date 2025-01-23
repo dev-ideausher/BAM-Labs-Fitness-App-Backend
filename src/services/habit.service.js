@@ -5,7 +5,16 @@ const addHabit = async habit => {
   return await Habit.create(habit);
 };
 
-const createCustomHabit = async habit => {
+const createCustomHabit = async (habit) => {
+  const existingHabit = await CustomHabit.findOne({
+    name: habit.name,
+    userId: habit.userId
+  });
+
+  if (existingHabit) {
+    throw new Error('You have already created a habit with this name');
+  }
+
   return await CustomHabit.create(habit);
 };
 

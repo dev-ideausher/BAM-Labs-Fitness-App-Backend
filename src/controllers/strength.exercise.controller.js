@@ -26,8 +26,18 @@ const getAllExercises = catchAsync(async (req, res) => {
     page: req.query.page || 1,
     limit: req.query.limit || 10,
   };
-  const exercises = await strengthExerciseService.getAllExercises(query, []);
+
+  const exercises = await strengthExerciseService.getAllExercises({
+    $or: [
+      { __t: null },
+      { __t: 'CustomStrengthExercise', userId: req.user._id },
+      { __t: 'CustomStrengthExercise', publicVisibility: true }
+    ],
+    ...query
+  }, []);
+
   const customExercises = await strengthExerciseService.getUserCustomExercises(req.user._id, query, []);
+
   res.status(200).json({
     status: true,
     message: 'Exercises fetched successfully',
