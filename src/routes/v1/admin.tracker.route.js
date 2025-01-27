@@ -20,7 +20,7 @@ router.put("/delete/muscle/:id", authenticate, trackerController.deleteMuscle);
 router.put("/delete/excercise/:id", authenticate, trackerController.deleteExcercise);
 router.put("/delete/:id", authenticate, trackerController.deleteStrengthContent);
 router.post('/muscle/exercise', authenticate ,validate(strengthContentValidation.addExerciseValidation), trackerController.addExerciseForMuscle);
-
+router.post('/add-muscle', authenticate,validate(strengthContentValidation.addMuscleValidation), trackerController.addMuscleToPrimaryCategory);
 
 // content management part for updating video only
 

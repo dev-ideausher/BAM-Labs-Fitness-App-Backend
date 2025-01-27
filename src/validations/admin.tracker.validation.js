@@ -72,4 +72,11 @@ const updateVideoValidation = {
     })
 }
 
-module.exports = {createStrengthContentValidation, updateMuscleExcerciseValidation, updateVideoValidation,addExerciseValidation};
+const addMuscleValidation = {
+    body: Joi.object({
+        categoryId: Joi.string().required(),
+        muscleName: Joi.string().required(),
+    }),
+};
+
+module.exports = {createStrengthContentValidation, updateMuscleExcerciseValidation, updateVideoValidation,addExerciseValidation,addMuscleValidation};
