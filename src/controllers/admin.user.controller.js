@@ -10,7 +10,7 @@ const {StretchSession, CardioSession, StrengthSession} = require('../models');
 
 const getUsers = catchAsync(async (req, res) => {
   const {type} = req.params;
-  const {search} = req.query;
+  const {search,isBlocked, isDeleted} = req.query;
   const {filters, options} = getPaginateConfig(req.query);
   options.project = {
     _id: 1,
@@ -22,6 +22,8 @@ const getUsers = catchAsync(async (req, res) => {
     gender: 1,
     isEmailVerified: 1,
     isPhoneVerified: 1,
+    isBlocked: 1,
+    isDeleted: 1,
   };
 
   if (!type) {
@@ -35,6 +37,15 @@ const getUsers = catchAsync(async (req, res) => {
   } else {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid type');
   }
+
+  if (isBlocked !== undefined) {
+    filters.isBlocked = isBlocked === 'true';
+  }
+
+  if (isDeleted !== undefined) {
+    filters.isDeleted = isDeleted === 'true';
+  }
+
   if (search) {
     if (filters.$or) {
       
