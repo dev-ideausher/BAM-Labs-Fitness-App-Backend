@@ -16,6 +16,9 @@ const getAllNotifications = catchAsync(async (req, res) => {
   if (req.query.userType) {
     filters.userType = req.query.userType;
   }
+  if (req.query.search) {
+    filters.title = { $regex: req.query.search, $options: 'i' };
+  }
   const data = await notificationService.getAllNotifications(filters, options);
   res.status(200).json({
     status: true,
