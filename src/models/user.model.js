@@ -101,6 +101,26 @@ const userSchema = new mongoose.Schema(
   {timestamps: true}
 );
 
+userSchema.index({ email: 1, isDeleted: 1 });
+userSchema.index({ phone: 1, isDeleted: 1 });
+
+userSchema.pre('save', async function(next) {
+  if (this.isModified('email') || this.isModified('phone')) {
+    const existingUser = await this.constructor.findOne({
+      $or: [
+        { email: this.email, isDeleted: false },
+        { phone: this.phone, isDeleted: false }
+      ],
+      _id: { $ne: this._id }
+    });
+
+    if (existingUser) {
+      next(new Error('Email or phone number already in use'));
+    }
+  }
+  next();
+});
+
 userSchema.pre('save', function(next) {
   if (this.weight && this.height) {
     const heightInMeters = this.height / 100;

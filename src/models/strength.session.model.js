@@ -23,19 +23,19 @@ const strengthSessionSchema = new mongoose.Schema(
     },
     sets: {
       type: Number,
-      required: true,
+      required: false,
     },
     reps: {
       type: Number,
-      required: true,
+      required: false,
     },
     totalReps: {
       type: Number,
-      required: true,
+      required: false,
     },
     sessionTime: {
       type: Number,
-      required: true,
+      required: false,
     },
   },
   {timestamps: true}

@@ -7,7 +7,8 @@ const addHabit = async habit => {
 
 const createCustomHabit = async (habit) => {
   const existingHabit = await CustomHabit.findOne({
-    name: habit.name,
+    // name: habit.name,
+    name: { $regex: new RegExp(`^${habit.name}$`, 'i') },
     userId: habit.userId
   });
 

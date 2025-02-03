@@ -15,7 +15,7 @@ const logStrengthSession = async (strengthSession) => {
   });
 
   if (existingSession) {
-    throw new Error('You have already logged a session for this exercise today');
+    throw new Error('You have already logged a session for this exercise on selected date');
   }
   return await StrengthSession.create(strengthSession);
 };
@@ -51,36 +51,74 @@ const getLastSession = async (userId, exerciseId) => {
   return await StrengthSession.findOne({userId, exerciseId}).sort({dateTime: -1});
 };
 
-const checkAndLogBestSession = async session => {
-  const {userId, sessionId} = session;
-  const {exerciseId, totalReps} = session._doc;
+// const checkAndLogBestSession = async session => {
+//   const {userId, sessionId} = session;
+//   const {exerciseId, totalReps} = session._doc;
 
-  const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
+//   const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
+//   let updatedBestSession = bestSession;
+
+//   let isUpdated = false;
+//   if(!bestSession){
+//     const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
+//     const updatedData = await StrengthBestSession.findOne({_id:data._id}).populate('sessionId');
+//     updatedBestSession = updatedData;
+
+//     isUpdated = true;
+//   } else {
+//     if(totalReps > bestSession.sessionId.totalReps){
+//       const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId}, {new: true}).populate('sessionId');
+//       updatedBestSession = data;
+//       isUpdated = true;
+//     }
+//   }
+//   return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
+// };
+const checkAndLogBestSession = async (session) => {
+  const { userId, sessionId } = session;
+  const { exerciseId, totalReps, weight } = session._doc;
+
+  const bestSession = await StrengthBestSession.findOne({ userId, exerciseId })
+    .sort({ totalReps: -1, 'sessionId.weight': -1 }) // Sort by totalReps first, then by weight
+    .populate('sessionId');
+
   let updatedBestSession = bestSession;
-
   let isUpdated = false;
-  if(!bestSession){
-    const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
-    const updatedData = await StrengthBestSession.findOne({_id:data._id}).populate('sessionId');
-    updatedBestSession = updatedData;
 
+  if (!bestSession) {
+    // If no best session exists, create a new one
+    const data = await StrengthBestSession.create({ userId, exerciseId, sessionId });
+    updatedBestSession = await StrengthBestSession.findOne({ _id: data._id }).populate('sessionId');
     isUpdated = true;
   } else {
-    if(totalReps > bestSession.sessionId.totalReps){
-      const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId}, {new: true}).populate('sessionId');
-      updatedBestSession = data;
+    let shouldUpdate = false;
+
+    if (totalReps !== undefined) {
+      shouldUpdate = totalReps > (bestSession.sessionId.totalReps || 0);
+    } else {
+      shouldUpdate = weight > (bestSession.sessionId.weight || 0);
+    }
+
+    if (shouldUpdate) {
+      updatedBestSession = await StrengthBestSession.findByIdAndUpdate(
+        bestSession._id,
+        { userId, exerciseId, sessionId },
+        { new: true }
+      ).populate('sessionId');
       isUpdated = true;
     }
   }
-  return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
+
+  return { bestSession: updatedBestSession.sessionId, updated: isUpdated };
 };
+
 const getUserBestSessions = async (userId, query, populateConfig) => {
   const data = await getAllData(StrengthBestSession, {...query, userId}, populateConfig);
   return data;
 };
 
 const getUserExerciseBestSession = async (userId, exerciseId) => {
-  return await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
+  return await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId').sort({ 'sessionId.totalReps': -1, 'sessionId.weight': -1 });
 };
 
 const getWeeklyStrengthMap = async (userId, exerciseId) => {

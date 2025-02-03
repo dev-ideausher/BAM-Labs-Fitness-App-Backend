@@ -17,7 +17,7 @@ const logSession = catchAsync(async (req, res) => {
       bestSession: data,
     });
   } catch (error) {
-    if (error.message === 'You have already logged a session for this exercise today') {
+    if (error.message === 'You have already logged a session for this exercise on selected date') {
       return res.status(400).json({ status: false, message: error.message });
     }
     res.status(500).json({ status: false, message: 'Internal server error', error: error.message });

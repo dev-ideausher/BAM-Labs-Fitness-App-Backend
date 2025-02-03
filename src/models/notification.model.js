@@ -5,6 +5,8 @@ const notificationSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: function() { return this.userType === 'individual'; }
+
   },
   user:{
     type: mongoose.Schema.Types.ObjectId,

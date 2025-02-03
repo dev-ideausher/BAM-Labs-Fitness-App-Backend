@@ -1,11 +1,26 @@
 const Notification = require("../models/notification.model");
+const agenda = require("../config/agenda");
 
 
+// const createNotification = async notification => {
+//   return await Notification.create({...notification, isByAdmin: true});
+// };
+const createNotification = async (notificationData) => {
+  const notification = await Notification.create({
+    ...notificationData,
+    isByAdmin: true,
+  });
 
-const createNotification = async notification => {
-  return await Notification.create({...notification, isByAdmin: true});
+  if (notification.type === 'PUSH') {
+    const job = agenda.create('send push notification', {
+      notificationId: notification._id,
+    });
+
+    await job.schedule(notification.schedule).save();
+  }
+
+  return notification;
 };
-
 
 const getAllNotifications = async (filters, options) => {
   filters.isByAdmin = true;
