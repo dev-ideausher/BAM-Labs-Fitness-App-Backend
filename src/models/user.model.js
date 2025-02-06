@@ -104,21 +104,27 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ email: 1, isDeleted: 1 });
 userSchema.index({ phone: 1, isDeleted: 1 });
 
-userSchema.pre('save', async function(next) {
-  if (this.isModified('email') || this.isModified('phone')) {
-    const existingUser = await this.constructor.findOne({
-      $or: [
-        { email: this.email, isDeleted: false },
-        { phone: this.phone, isDeleted: false }
-      ],
-      _id: { $ne: this._id }
-    });
+userSchema.pre('save', async function (next) {
+  try {
+    if (this.isModified('email') || this.isModified('phone')) {
+      const existingUser = await this.constructor.findOne({
+        $or: [
+          { email: this.email, isDeleted: false },
+          { phone: this.phone, isDeleted: false }
+        ],
+        _id: { $ne: this._id }
+      });
 
-    if (existingUser) {
-      next(new Error('Email or phone number already in use'));
+      if (existingUser) {
+        const error = new Error('Email or phone already in use');
+        error.statusCode = 409;
+        return next(error);
+      }
     }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 userSchema.pre('save', function(next) {

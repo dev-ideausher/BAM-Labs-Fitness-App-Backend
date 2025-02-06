@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 
 async function sendToTopic(topic, notification, data) {
+  console.log('Sending notification:', { topic, notification, data });
   const messaging = admin.messaging();
   var payload = {
     notification,
@@ -12,7 +13,8 @@ async function sendToTopic(topic, notification, data) {
     },
   };
   try {
-    await messaging.send(payload);
+   const response = await messaging.send(payload);
+    console.log('Successfully sent message:', response);
     return true;
   } catch (err) {
     console.log(err);

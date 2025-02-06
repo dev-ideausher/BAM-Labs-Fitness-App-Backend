@@ -6,12 +6,18 @@ const userValidation = require('../../validations/user.validation');
 
 const {userController} = require('../../controllers');
 // const {fileUploadService} = require('../../microservices');
+const {workoutReminderController} = require('../../controllers');
 
 const router = express.Router();
 
 router.get('/', firebaseAuth('All'), userController.getAllUsers);
 
 router.get('/me', firebaseAuth('All'), userController.getUserbyId);
+router
+  .route('/reminder')
+  .post(firebaseAuth('All'), workoutReminderController.createWorkoutReminder)
+  .get(firebaseAuth('All'), workoutReminderController.getMyReminder)
+  .delete(firebaseAuth('All'), workoutReminderController.deleteWorkoutReminder);
 
 // for updating userDetails
 router.patch(
