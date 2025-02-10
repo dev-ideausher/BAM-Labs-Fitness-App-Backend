@@ -17,6 +17,7 @@ const scheduleWorkoutReminder = async (reminderTime, userId) => {
       
       await sendToTopic(
         userId,
+        `user_${userId}`,
         {
           title: 'Workout Time! 💪',
           body: "It's time for your scheduled workout. Let's get moving!",

@@ -94,7 +94,8 @@ agenda.define('send-habit-reminder-*', async job => {
     }
 
     await sendToTopic(
-      userId.toString(),
+      userId,
+      `user_${userId}`,
       {
         title: 'Habit Reminder',
         body: message,
@@ -117,5 +118,3 @@ module.exports = {
     await agenda.cancel({'data.habitId': habitId});
   },
 };
-
-

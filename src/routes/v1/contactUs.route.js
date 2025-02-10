@@ -13,5 +13,6 @@ router.get('/all',authenticate ,contactUsController.getAllSupportRequests);
 router.get('/request/:id',authenticate ,contactUsController.getSupportRequestById);
 router.delete('/delete/:id',authenticate ,contactUsController.deleteSupportRequestById);
 router.get('/prevcomplaints',authenticate ,contactUsController.getAllComplaintsByUserId);
+router.post('/reply/:id',contactUsController.replyToSupportRequest); 
 
 module.exports = router;

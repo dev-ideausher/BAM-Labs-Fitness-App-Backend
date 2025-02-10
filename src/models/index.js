@@ -11,6 +11,7 @@ const {TargetedMuscle} = require('./targeted.muscles.model');
 const {Admin} = require('./admin.model');
 const {ContactUs} = require('./contact.model');
 const {Content} = require("./content.model")
+const {userNotification} = require('./userNotification.model');
 
 module.exports = {
   User,
@@ -28,5 +29,6 @@ module.exports = {
   UserHabit,
   Admin,
   ContactUs,
-  Content
+  Content,
+  userNotification
 };

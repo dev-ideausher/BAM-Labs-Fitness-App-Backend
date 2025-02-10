@@ -25,6 +25,8 @@ const supportRequestSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  reply: { type: String, trim: true },
+  repliedAt: { type: Date },
   status: {
     type: String,
     enum: ['Open', 'In_progress', 'Closed'],

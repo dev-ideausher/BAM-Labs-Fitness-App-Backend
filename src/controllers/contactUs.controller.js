@@ -1,6 +1,7 @@
 const {contactUsService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const {ContactUs} = require('../models');
+const {sendToTopic} = require('../microservices/notification.service');
 
 const createSupportRequest = catchAsync(async (req, res) => {
   const supportRequest = await contactUsService.createSupportRequest({...req.body, user: req.user._id});
@@ -68,10 +69,38 @@ const getAllComplaintsByUserId = async (req, res) => {
     });
   }
 };
+
+const replyToSupportRequest = catchAsync(async (req, res) => {
+  const {reply} = req.body;
+  const {id} = req.params;
+
+  const supportRequest = await ContactUs.findById(id);
+  if (!supportRequest) {
+    return res.status(404).send({status: false, message: 'Support request not found'});
+  }
+
+  supportRequest.reply = reply;
+  supportRequest.repliedAt = new Date();
+  supportRequest.status = 'Closed';
+  await supportRequest.save();
+
+  const notificationData = {
+    title: 'Support Query Response',
+    body: `Your query has been answered: "${reply}"`,
+  };
+
+  await sendToTopic(supportRequest.user, `user_${supportRequest.user}`, notificationData, {
+    ticketNo: String(supportRequest.ticketNo),
+  });
+
+  res.status(200).send({status: true, message: 'Reply sent successfully', data: supportRequest});
+});
+
 module.exports = {
   createSupportRequest,
   getAllSupportRequests,
   getSupportRequestById,
   deleteSupportRequestById,
   getAllComplaintsByUserId,
+  replyToSupportRequest,
 };

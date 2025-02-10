@@ -43,6 +43,6 @@ router.patch('/metrics', firebaseAuth('All'), userController.updateUserMetrics);
 router.get('/today-stats', firebaseAuth('All'), userController.getTodayStats);
 router.get('/practice-stats', firebaseAuth('All'),userController.getPracticeStats);
 router.get('/exercise-stats', firebaseAuth('All'),userController.getExerciseStats);
-
+router.get('/all-notifications', firebaseAuth('All'), userController.getAllNotifications);
 
 module.exports = router;

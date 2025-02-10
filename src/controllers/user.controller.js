@@ -3,6 +3,8 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const {userService} = require('../services');
 const mongoose = require('mongoose');
+const {getPaginateConfig} = require('../utils/queryPHandler');
+const {userNotification} = require('../models/userNotification.model');
 
 const {StrengthExercise, StrengthSession, CardioSession, StretchSession,PrimaryCategory,TargetedMuscle} = require('../models');
 
@@ -349,6 +351,43 @@ const getExerciseStats = catchAsync(async (req, res) => {
   });
 });
 
+const getAllNotifications = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+
+  const initialUnreadCount = await userNotification.countDocuments({userId, status: 'sent', read: false});
+  const totalCount = await userNotification.countDocuments({userId, status: 'sent'});
+
+  const notifications = await userNotification
+    .find({userId, status: 'sent'})
+    .sort({timestamp: -1})
+    .select('title body status read timestamp');
+
+  if (initialUnreadCount > 0) {
+    const latestUnreadNotifications = await userNotification
+      .find({userId, status: 'sent', read: false})
+      .sort({timestamp: -1})
+      .limit(10);
+
+    if (latestUnreadNotifications.length > 0) {
+      const notificationIds = latestUnreadNotifications.map(notif => notif._id);
+      await userNotification.updateMany({_id: {$in: notificationIds}}, {$set: {read: true}});
+    }
+  }
+  const readCount = totalCount - initialUnreadCount;
+
+  res.status(200).json({
+    status: true,
+    message: 'Notifications retrieved successfully',
+    data: {
+      notifications,
+      counts: {
+        total: totalCount,
+        read: readCount,
+        unread: initialUnreadCount,
+      },
+    },
+  });
+});
 
 module.exports = {
   getAllUsers,
@@ -361,4 +400,5 @@ module.exports = {
   getTodayStats,
   getPracticeStats,
   getExerciseStats,
+  getAllNotifications
 };
