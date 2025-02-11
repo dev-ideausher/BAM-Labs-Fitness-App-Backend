@@ -377,7 +377,7 @@ const getAllNotifications = catchAsync(async (req, res) => {
     currentFilterCount = initialCounts.total;
   }
 
-  const totalPages = Math.ceil(currentFilterCount / limitNumber) || 1;
+  let totalPages = Math.ceil(currentFilterCount / limitNumber) || 1;
   if (pageNumber > totalPages) {
     return res.status(200).json({
       status: true,
@@ -418,6 +418,9 @@ const getAllNotifications = catchAsync(async (req, res) => {
         read: initialCounts.read + notificationIds.length,
         unread: initialCounts.unread - notificationIds.length
       };
+
+      currentFilterCount = finalCounts.unread;
+      totalPages = Math.ceil(currentFilterCount / limitNumber) || 1;
     }
   }
 
