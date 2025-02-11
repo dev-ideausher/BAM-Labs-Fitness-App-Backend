@@ -353,26 +353,45 @@ const getExerciseStats = catchAsync(async (req, res) => {
 
 const getAllNotifications = catchAsync(async (req, res) => {
   const userId = req.user.id;
+  const { read, page = 1, limit = 10 } = req.query;
 
-  const initialUnreadCount = await userNotification.countDocuments({userId, status: 'sent', read: false});
-  const totalCount = await userNotification.countDocuments({userId, status: 'sent'});
+  let filter = { userId, status: 'sent' };
+  if (read !== undefined) {
+    filter.read = read === 'true';
+  }
+
+  const initialUnreadCount = await userNotification.countDocuments({
+    ...filter,
+    read: false
+  });
+
+  const totalCount = await userNotification.countDocuments(filter);
 
   const notifications = await userNotification
-    .find({userId, status: 'sent'})
-    .sort({timestamp: -1})
-    .select('title body status read timestamp');
+    .find(filter)
+    .sort({ timestamp: -1 })
+    .select('title body status read timestamp')
+    .skip((page - 1) * limit)
+    .limit(Number(limit));
 
   if (initialUnreadCount > 0) {
     const latestUnreadNotifications = await userNotification
-      .find({userId, status: 'sent', read: false})
-      .sort({timestamp: -1})
+      .find({
+        ...filter,
+        read: false
+      })
+      .sort({ timestamp: -1 })
       .limit(10);
 
     if (latestUnreadNotifications.length > 0) {
       const notificationIds = latestUnreadNotifications.map(notif => notif._id);
-      await userNotification.updateMany({_id: {$in: notificationIds}}, {$set: {read: true}});
+      await userNotification.updateMany(
+        { _id: { $in: notificationIds } },
+        { $set: { read: true } }
+      );
     }
   }
+
   const readCount = totalCount - initialUnreadCount;
 
   res.status(200).json({
@@ -385,9 +404,15 @@ const getAllNotifications = catchAsync(async (req, res) => {
         read: readCount,
         unread: initialUnreadCount,
       },
+      pagination: {
+        currentPage: Number(page),
+        totalPages: Math.ceil(totalCount / limit),
+        limit: Number(limit),
+      }
     },
   });
 });
+
 
 module.exports = {
   getAllUsers,
