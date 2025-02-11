@@ -354,62 +354,85 @@ const getExerciseStats = catchAsync(async (req, res) => {
 const getAllNotifications = catchAsync(async (req, res) => {
   const userId = req.user.id;
   const { read, page = 1, limit = 10 } = req.query;
+  const limitNumber = Number(limit);
+  const pageNumber = Math.max(1, Number(page));
 
   let filter = { userId, status: 'sent' };
   if (read !== undefined) {
     filter.read = read === 'true';
   }
 
-  const initialUnreadCount = await userNotification.countDocuments({
-    ...filter,
-    read: false
-  });
+  const initialCounts = {
+    total: await userNotification.countDocuments({ userId, status: 'sent' }),
+    read: await userNotification.countDocuments({ userId, status: 'sent', read: true }),
+    unread: await userNotification.countDocuments({ userId, status: 'sent', read: false })
+  };
 
-  const totalCount = await userNotification.countDocuments(filter);
+  let currentFilterCount;
+  if (read === 'true') {
+    currentFilterCount = initialCounts.read;
+  } else if (read === 'false') {
+    currentFilterCount = initialCounts.unread;
+  } else {
+    currentFilterCount = initialCounts.total;
+  }
+
+  const totalPages = Math.ceil(currentFilterCount / limitNumber) || 1;
+  if (pageNumber > totalPages) {
+    return res.status(200).json({
+      status: true,
+      message: 'Notifications retrieved successfully',
+      data: {
+        notifications: [],
+        counts: initialCounts,
+        pagination: {
+          currentPage: pageNumber,
+          totalPages,
+          limit: limitNumber
+        }
+      }
+    });
+  }
 
   const notifications = await userNotification
     .find(filter)
     .sort({ timestamp: -1 })
     .select('title body status read timestamp')
-    .skip((page - 1) * limit)
-    .limit(Number(limit));
+    .skip((pageNumber - 1) * limitNumber)
+    .limit(limitNumber);
 
-  if (initialUnreadCount > 0) {
-    const latestUnreadNotifications = await userNotification
-      .find({
-        ...filter,
-        read: false
-      })
-      .sort({ timestamp: -1 })
-      .limit(10);
+  let finalCounts = { ...initialCounts };
+  if (read === 'false' && initialCounts.unread > 0) {
+    const notificationIds = notifications
+      .filter(notif => !notif.read)
+      .map(notif => notif._id);
 
-    if (latestUnreadNotifications.length > 0) {
-      const notificationIds = latestUnreadNotifications.map(notif => notif._id);
+    if (notificationIds.length > 0) {
       await userNotification.updateMany(
         { _id: { $in: notificationIds } },
         { $set: { read: true } }
       );
+
+      finalCounts = {
+        total: initialCounts.total,
+        read: initialCounts.read + notificationIds.length,
+        unread: initialCounts.unread - notificationIds.length
+      };
     }
   }
-
-  const readCount = totalCount - initialUnreadCount;
 
   res.status(200).json({
     status: true,
     message: 'Notifications retrieved successfully',
     data: {
       notifications,
-      counts: {
-        total: totalCount,
-        read: readCount,
-        unread: initialUnreadCount,
-      },
+      counts: finalCounts,
       pagination: {
-        currentPage: Number(page),
-        totalPages: Math.ceil(totalCount / limit),
-        limit: Number(limit),
+        currentPage: pageNumber,
+        totalPages,
+        limit: limitNumber
       }
-    },
+    }
   });
 });
 
