@@ -10,7 +10,7 @@ const { contactUsValidation } = require('../../validations');
 const router = express.Router();
 
 
-router.get('/', authenticate, contentController.getAllContents);
+router.get('/', contentController.getAllContents);
 router.get('/app', firebaseAuth('user'),validate(contactUsValidation.getContentTypeValidationSchema), contentController.getContentByType)
 router.post('/', authenticate, contentController.createContent);
 router.get("/:id", authenticate, contentController.getContentById);
