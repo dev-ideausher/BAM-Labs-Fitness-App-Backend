@@ -16,6 +16,7 @@ const validateHabitData = reqBody => {
     notificationToggle,
     customNotificationTimes,
     customNotificationCount,
+    offset,
   } = reqBody;
 
   // Initialize a new habit object to return
@@ -32,6 +33,7 @@ const validateHabitData = reqBody => {
     notificationToggle,
     customNotificationTimes,
     customNotificationCount,
+    offset,
   };
 
   if (customNotificationTimes && !Array.isArray(customNotificationTimes)) {

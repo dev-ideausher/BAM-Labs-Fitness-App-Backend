@@ -62,6 +62,10 @@ const userHabitSchma = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    offset: {
+      type: Number,
+      required: true,
+    },
   },
 
   {timestamps: true}

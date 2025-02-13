@@ -37,7 +37,8 @@ const createWorkoutReminder = catchAsync(async (req, res) => {
 const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   try {
     const jobName = `workout-reminder-${userId}`;
-    const notificationTime = new Date(reminderTime);
+    // const notificationTime = new Date(reminderTime);
+    const notificationTime = new Date(reminderTime.getTime() - offset * 60000);
 
     await agenda.cancel({name: jobName});
     agenda.define(jobName, async job => {

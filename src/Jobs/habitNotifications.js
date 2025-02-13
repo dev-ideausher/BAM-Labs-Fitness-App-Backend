@@ -2,18 +2,19 @@ const agenda = require('../config/agenda');
 const {sendToTopic} = require('../microservices/notification.service');
 
 const scheduleHabitNotifications = async userHabit => {
-  if (!userHabit.notificationToggle || !userHabit.taskType) {
-    return;
-  }
+  if (!userHabit.notificationToggle || !userHabit.taskType) return;
 
   try {
-    await agenda.cancel({'data.habitId': userHabit._id});
+    await agenda.cancel({ 'data.habitId': userHabit._id });
 
     if (userHabit.taskType && userHabit.customNotificationTimes?.length) {
       const jobs = [];
 
       for (const time of userHabit.customNotificationTimes) {
-        const date = new Date(time);
+        let date = new Date(time);
+        if (userHabit.offset) {
+          date = new Date(date.getTime() - userHabit.offset * 60000);
+        }
         const hours = date.getUTCHours();
         const minutes = date.getUTCMinutes();
         let pattern;
@@ -22,12 +23,14 @@ const scheduleHabitNotifications = async userHabit => {
           case 'daily':
             if (userHabit.taskDays === 'everyday') {
               pattern = `${minutes} ${hours} * * *`;
-            } else if (userHabit.taskDays === 'specific-weekdays' && userHabit.specificWeekdays?.length) {
+            } else if (
+              userHabit.taskDays === 'specific-weekdays' &&
+              userHabit.specificWeekdays?.length
+            ) {
               const weekdays = userHabit.specificWeekdays.sort().join(',');
               pattern = `${minutes} ${hours} * * ${weekdays}`;
             }
             break;
-
           case 'weekly':
             if (userHabit.taskDays === 'weekly-count' && userHabit.weeklyCount) {
               const startDay = new Date().getUTCDay();
@@ -39,19 +42,47 @@ const scheduleHabitNotifications = async userHabit => {
               pattern = `${minutes} ${hours} * * ${weekdays}`;
             }
             break;
-
           case 'monthly':
             if (userHabit.taskDays === 'monthly-count' && userHabit.monthlyCount) {
-              const days = Array.from({length: userHabit.monthlyCount}, (_, i) => i + 1).join(',');
+              const days = Array.from({ length: userHabit.monthlyCount }, (_, i) => i + 1).join(',');
               pattern = `${minutes} ${hours} ${days} * *`;
             }
             break;
         }
 
         if (pattern) {
+        
           const jobName = `send-habit-reminder-${userHabit._id}-${hours}-${minutes}`;
           const uniqueJobId = `${userHabit.userId}-${userHabit._id}-${hours}-${minutes}`;
 
+          if (!agenda._definitions[jobName]) {
+            agenda.define(jobName, async job => {
+              const { userId, habitId, message, notificationType } = job.attrs.data;
+              try {
+                const { UserHabit } = require('../models');
+                const habit = await UserHabit.findById(habitId);
+                if (!habit || !habit.notificationToggle) {
+                  await agenda.cancel({ 'data.habitId': habitId });
+                  return;
+                }
+                await sendToTopic(
+                  userId,
+                  `user_${userId}`,
+                  {
+                    title: 'Habit Reminder',
+                    body: message,
+                  },
+                  {
+                    habitId: habitId.toString(),
+                    type: notificationType,
+                  }
+                );
+                console.log(`Notification sent for habit ${habitId} at ${new Date().toISOString()}`);
+              } catch (error) {
+                console.error(`Error sending notification for habit ${habitId}:`, error);
+              }
+            });
+          }
           const job = await agenda.every(
             pattern,
             jobName,
@@ -60,17 +91,14 @@ const scheduleHabitNotifications = async userHabit => {
               habitId: userHabit._id,
               message: `Time to perform "${userHabit.habitName}"!`,
               notificationType: 'regular_reminder',
-              uniqueJobId: uniqueJobId,
+              uniqueJobId,
               scheduledTime: time,
             },
             {
               timezone: 'UTC',
-              unique: {
-                'data.uniqueJobId': uniqueJobId,
-              },
+              unique: { 'data.uniqueJobId': uniqueJobId },
             }
           );
-
           jobs.push(job);
         }
       }
@@ -81,40 +109,9 @@ const scheduleHabitNotifications = async userHabit => {
   }
 };
 
-agenda.define('send-habit-reminder-*', async job => {
-  const {userId, habitId, message, notificationType} = job.attrs.data;
-
-  try {
-    const UserHabit = require('../models').UserHabit;
-    const habit = await UserHabit.findById(habitId);
-
-    if (!habit || !habit.notificationToggle) {
-      await agenda.cancel({'data.habitId': habitId});
-      return;
-    }
-
-    await sendToTopic(
-      userId,
-      `user_${userId}`,
-      {
-        title: 'Habit Reminder',
-        body: message,
-      },
-      {
-        habitId: habitId.toString(),
-        type: notificationType,
-      }
-    );
-
-    console.log(`Notification sent for habit ${habitId} at ${new Date().toISOString()}`);
-  } catch (error) {
-    console.error(`Error sending notification for habit ${habitId}:`, error);
-  }
-});
-
 module.exports = {
   scheduleHabitNotifications,
   cancelHabitNotifications: async habitId => {
-    await agenda.cancel({'data.habitId': habitId});
+    await agenda.cancel({ 'data.habitId': habitId });
   },
 };
