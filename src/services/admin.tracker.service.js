@@ -109,7 +109,8 @@ const getSpecificCategory = async id => {
   const targetedMuscles = await TargetedMuscle.find({primaryCategory: primaryCategory._id, isDeleted: false});
   let res = [];
   for (const muscle of targetedMuscles) {
-    const excercizes = await StrengthExercise.find({targetedMuscle: muscle._id, isDeleted: false});
+    const excercizes = await StrengthExercise.find({targetedMuscle: muscle._id, isDeleted: false,
+      __t: { $exists: false } });
     res.push({muscle, excercizes});
   }
   return res;

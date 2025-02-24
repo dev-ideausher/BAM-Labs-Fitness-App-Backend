@@ -18,3 +18,4 @@ exports.contentController = require('./content.controller');
 exports.notificationController = require('./notification.controller');
 exports.adminDashboardController = require('./admindashboard.controller');
 exports.workoutReminderController = require('./workoutReminder.controller');
+exports.aichatbotController = require('./ai.controller');

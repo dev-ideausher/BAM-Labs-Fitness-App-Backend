@@ -12,6 +12,7 @@ const {Admin} = require('./admin.model');
 const {ContactUs} = require('./contact.model');
 const {Content} = require("./content.model")
 const {userNotification} = require('./userNotification.model');
+const { WorkoutState } = require('./WorkoutState.model');
 
 module.exports = {
   User,
@@ -30,5 +31,6 @@ module.exports = {
   Admin,
   ContactUs,
   Content,
-  userNotification
+  userNotification,
+  WorkoutState
 };

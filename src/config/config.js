@@ -1,6 +1,7 @@
 const Joi = require('joi');
 const path = require('path');
 const dotnev = require('dotenv');
+const { OpenAI } = require('openai');
 
 dotnev.config({path: path.join(__dirname, '../../.env')});
 
@@ -41,6 +42,7 @@ const envVarsSchema = Joi.object()
     
   RESEND_API_KEY: Joi.string().required(),
   RESEND_FROM_EMAIL: Joi.string().email().required(),
+  OPENAI_API_KEY: Joi.string().required(),
   })
   .unknown();
 
@@ -51,6 +53,10 @@ const {value: envVars, error} = envVarsSchema.prefs({errors: {label: 'key'}}).va
 if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
+
+const openai = new OpenAI({
+  apiKey: envVars.OPENAI_API_KEY,
+});
 
 module.exports = {
   env: envVars.NODE_ENV,
@@ -103,4 +109,5 @@ module.exports = {
     apiKey: envVars.RESEND_API_KEY,
     fromEmail: envVars.RESEND_FROM_EMAIL,
   },
+  openai,
 };
