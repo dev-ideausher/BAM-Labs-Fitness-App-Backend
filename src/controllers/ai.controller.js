@@ -3,7 +3,7 @@ const ApiError = require('../utils/ApiError');
 const {WorkoutState} = require('../models/WorkoutState.model');
 const WorkoutAssistant = require('../Bam-Ai-chatbot/simpleQAAssistant');
 const AssistantManagerAnalysis = require('../Bam-Ai-chatbot/assistantManagerAnalysis');
-const AssistantManagerScheduleTime = require('../Bam-Ai-chatbot/AssistantManagerScheduleTime');
+// const AssistantManagerScheduleTime = require('../Bam-Ai-chatbot/AssistantManagerScheduleTime');
 
 function getQueryCase(query) {
   if (/analyz|histor|perform/i.test(query)) {
