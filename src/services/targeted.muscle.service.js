@@ -6,6 +6,7 @@ const createTargetedMuscle = async targetedMuscle => {
 };
 
 const getAllTargetedMuscles = async (query, populateConfig) => {
+  query.sort = 'name';
   return await getAllData(TargetedMuscle, query, populateConfig);
 };
 

@@ -21,6 +21,7 @@ const getExerciseById = async id => {
 const getUserCustomExercises = async (userId, query, populateConfig) => {
   // const data = await getAllData(CustomStrengthExercise, query, populateConfig);
   const data = await getAllData(CustomStrengthExercise, { userId, ...query }, populateConfig);
+  // console.log(data);
   return data;
 };
 

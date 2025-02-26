@@ -12,6 +12,11 @@ const createTargetedMuscle = catchAsync(async (req, res) => {
 
 const getAllTargetedMuscles = catchAsync(async (req, res) => {
   const targetedMuscles = await targetedMuscleService.getAllTargetedMuscles(req.query, []);
+  if (targetedMuscles && Array.isArray(targetedMuscles.results)) {
+    targetedMuscles.results.sort((a, b) => {
+      return (a.targetedMuscle || "").localeCompare(b.targetedMuscle || "");
+    });
+  }
   res.status(200).json({
     status: true,
     message: 'Targeted Muscles fetched successfully',

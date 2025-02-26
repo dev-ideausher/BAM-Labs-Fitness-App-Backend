@@ -25,6 +25,7 @@ const getAllExercises = catchAsync(async (req, res) => {
     ...req.query,
     page: req.query.page || 1,
     limit: req.query.limit || 10,
+     sort: 'exerciseName'
   };
 
   const exercises = await strengthExerciseService.getAllExercises({
