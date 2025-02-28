@@ -5,6 +5,7 @@ const workoutStateSchema = new mongoose.Schema({
   assistantId: String,
   threadId: String,
   vectorStoreId: String,
+  fitnessLevel: { type: String, required: true },
   createdAt: {type: Date, default: Date.now},
 });
 

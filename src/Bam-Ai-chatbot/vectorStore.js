@@ -65,7 +65,7 @@ async function getOrCreateAssistant(workoutState) {
     const response = await openai.beta.assistants.create({
       name: 'Workout Assistant',
       instructions:
-        'You are a fitness assistant. When answering queries, only consider workout exercise files associated with the given user ID. Do not include meal or diet plans in your responses.',
+        'You are a fitness assistant. When answering queries, only consider workout exercise files associated with the given user ID.',
       model: 'gpt-4o',
       tools: [{type: 'file_search'}],
       tool_resources: {

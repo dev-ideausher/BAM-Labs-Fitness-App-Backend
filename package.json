@@ -34,6 +34,7 @@
     "nodemon": "^3.0.1",
     "openai": "^4.85.4",
     "resend": "^4.1.1",
+    "strip-json-comments": "^5.0.1",
     "twilio": "^4.11.2",
     "uuid": "^9.0.0",
     "validator": "^13.9.0",

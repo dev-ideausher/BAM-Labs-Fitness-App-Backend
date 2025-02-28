@@ -1,323 +1,58 @@
-// const mongoose = require('mongoose');
-// const {openai} = require('../config/config');
-// const {User} = require('../models');
-
-// const createVectorStore = async () => {
-//   try {
-//     const initialFileIds = [];
-//     const vectorStore = await openai.beta.vectorStores.create({
-//       name: 'Fitness Data',
-//       file_ids: initialFileIds,
-//     });
-
-//     console.log('Vector store created:', vectorStore);
-//     if (!vectorStore.id) {
-//       throw new Error('Vector store creation failed: No ID returned');
-//     }
-
-//     const existingFiles = await openai.files.list({purpose: 'assistants'});
-
-//     const fileIds = [];
-//     const requiredFiles = [
-//       'Updated_Basic_Exercises.json',
-//       'Updated_Intermediate_Exercises.json',
-//       'Advanced_Exercises_Final_Updated.json',
-//     ];
-
-//     for (const fileName of requiredFiles) {
-//       const file = existingFiles.data.find(f => f.filename === fileName);
-//       if (file) {
-//         fileIds.push(file.id);
-//       } else {
-//         console.error(`File ${fileName} not found in OpenAI files`);
-//       }
-//     }
-
-//     return vectorStore;
-//   } catch (error) {
-//     console.error('Error creating vector store:', error);
-//     throw error;
-//   }
-// };
-
-// const createAssistant = async userLevel => {
-//   try {
-//     const level = userLevel || 'Basic';
-
-//     const assistant = await openai.beta.assistants.create({
-//       name: 'Fitness Assistant',
-//       instructions: `
-//         You are a fitness assistant designed to help users achieve their fitness goals. Your responses should be humanized and efficient, especially for casual queries. If the query is not related to fitness, politely decline to answer.
-
-//         1. Casual Queries: Handle friendly greetings naturally.
-//         2. Non-Fitness Queries: Politely decline if the query is unrelated to fitness.
-//         3. Fitness-Related Queries Without Plan Requests: Provide clear, conversational answers to fitness-related queries that don't request a workout plan.
-
-//         **User Level:**
-//         ${level}
-
-//         4. Workout Plan Requests:
-//         - When a user requests a workout plan, first analyze the duration mentioned.
-//         - If the query specifies a duration using terms such as "week", "month", or "quarter", convert the duration to days only. For example, "4 weeks" must be converted to "28 days", "2 months" to "60 days" (or a similar day-based approximation).
-//         - **If the converted duration is less than or equal to 30 days, generate a plan for that exact number of days without any additional instructions.**
-//         - **If the converted duration exceeds 30 days, generate only a 30-day plan and then append an instruction at the end of the response stating: "Instruction: Repeat this workout plan for the remaining X days," where X is the difference between the requested duration (converted to days) and 30 days.**
-//         - **If no duration is specified, generate a default 30-day plan**.
-//         - Select exercises based on the user's level:
-//             - If the user's level is **Basic**, fetch exercises from "Updated_Basic_Exercises.json".
-//             - If the user's level is **Intermediate**, fetch exercises from "Updated_Intermediate_Exercises.json".
-//             - If the user's level is **Advanced**, fetch exercises from "Advanced_Exercises_Final_Updated.json".
-
-//         5. Unrealistic Goal Handling:
-//         - If the user's goal is unrealistic (e.g., "I want to lose 50 kg in 1 month"), first explain in a friendly and supportive manner why it is unrealistic and outline a feasible approach with realistic milestones.
-//         - Immediately generate a workout plan for the first 30 days following the output format.
-//         - Append an instruction message at the end stating: "Instruction: First, follow this 30-day plan. Then, for the remaining X days, gradually increase sets or reps to help achieve your goal," where X is the number of days beyond the initial 30 days as per the user's original request.
-
-//         6. Data Sources:
-//         - User model: Stores user info (age, weight, fitness level, preferences, etc.)
-//         - "Updated_Basic_Exercises.json", "Updated_Intermediate_Exercises.json", "Advanced_Exercises_Final_Updated.json": Exercise lists based on user level.
-//         - When available, prioritize BMI and body fat data from the user model.
-
-//         7. Output Format (Strict JSON format, no extra text):
-//         {
-//             "description": "One-line description of the purpose of the plan",
-//             "workout_plan": {
-//                 "Day 1": [
-//                     {
-//                         "_id": "Fetch only the numeric Id from the respective level-based exercise file (for example, '26')",
-//                         "sets": "Determine the number of sets based on the user's details and goal (for example, 2 or 3-4)",
-//                         "reps": "Determine the repetition range appropriate for the exercise (for example, '10-12' or '15-20 minutes' for cardio)",
-//                         "interval": "Specify the rest interval (for example, '60 seconds' or '2 min') or note 'continuous' if applicable",
-//                         "estimated_time": "Provide an estimated time for the exercise (for example, '20 minutes')",
-//                         "estimated_calories": "Provide an estimated calorie burn for the exercise (for example, 150)"
-//                     }
-//                 ],
-//                 "Day 2": [
-//                     "... // Continue for each day based on the converted (or default) duration"
-//                 ],
-//                 "..."
-//             },
-//             "instruction": "If applicable, include an instruction message here as specified in the guidelines."
-//         }
-
-//         Ensure that:
-//         - If the user query mentions a duration using "week", "month", or "quarter", convert that duration into days and structure the plan using only day-based keys.
-//         - If the requested duration is less than or equal to 30 days, generate a plan for that exact number of days without appending any extra instruction.
-//         - If the requested duration exceeds 30 days, generate only a 30-day plan and include an instruction message for the remaining days.
-//         - In the case of an unrealistic goal, first explain why the goal is unrealistic and how to approach it realistically, then generate a 30-day plan followed by an instruction message for additional days.
-//         - Do not output any keys like "Week 1", "Month 1", or similar.
-//         - Do not use fixed values (e.g., sets: 1) for all parameters; determine each parameter dynamically based on the user's details and fitness goal.
-//         - Your response must be in valid JSON format with no extra text.
-//         - **If no duration is specified, generate a default 30-day plan**.
-
-//         Handling BMI and Body Fat Data:
-//         - Use the following values from the user's profile as the correct parameters:
-//             - **BMI: Use the bmi value from the user model**
-//             - **Body Fat: Use the bodyFat value from the user model**
-
-//         Consider weight in (lbs) and Height in (cm).
-//         Always fetch exercises from the correct level-based file to personalize plans.
-//       `,
-//       model: 'gpt-4o-mini',
-//       tools: [{type: 'file_search'}],
-//       temperature: 0.1,
-//     });
-
-//     return assistant;
-//   } catch (error) {
-//     console.error('Error creating assistant:', error);
-//     throw error;
-//   }
-// };
-
-// const createThread = async () => {
-//   try {
-//     return await openai.beta.threads.create();
-//   } catch (error) {
-//     console.error('Error creating thread:', error);
-//     throw error;
-//   }
-// };
-
-// const updateAssistantWithVectorStore = async (assistantId, vectorStoreId) => {
-//   try {
-//     await openai.beta.assistants.update(assistantId, {
-//       tool_resources: {
-//         file_search: {
-//           vector_store_ids: [vectorStoreId],
-//         },
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Error updating assistant with vector store:', error);
-//     throw error;
-//   }
-// };
-
-// const processQuery = async (threadId, assistantId, query, userId) => {
-//   try {
-//     const user = await User.findById(userId);
-
-//     if (!user) {
-//       throw new Error('User not found');
-//     }
-//     await openai.beta.threads.messages.create(threadId, {
-//       role: 'user',
-//       content: `User Information:
-//         Name: ${user.name || 'N/A'}
-//         Weight: ${user.weight || 'N/A'}
-//         Height: ${user.height || 'N/A'}
-//         BMI: ${user.bmi || 'N/A'}
-//         Body Fat: ${user.bodyFat || 'N/A'}
-//         Gender: ${user.gender || 'N/A'}
-
-//         User Query: ${query}`,
-//     });
-
-//     const run = await openai.beta.threads.runs.create(threadId, {assistant_id: assistantId});
-
-//     let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
-//     const maxAttempts = 60;
-//     let attempts = 0;
-
-//     while (
-//       runStatus.status !== 'completed' &&
-//       runStatus.status !== 'failed' &&
-//       runStatus.status !== 'cancelled' &&
-//       attempts < maxAttempts
-//     ) {
-//       await new Promise(resolve => setTimeout(resolve, 1000));
-//       runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
-//       attempts++;
-//     }
-
-//     if (runStatus.status === 'completed') {
-//       const messages = await openai.beta.threads.messages.list(threadId);
-
-//       const assistantMessages = messages.data.filter(msg => msg.role === 'assistant');
-
-//       if (assistantMessages.length > 0) {
-//         const content = assistantMessages[0].content.find(c => c.type === 'text')?.text?.value;
-
-//         if (!content) {
-//           throw new Error('No text content found in assistant response');
-//         }
-
-//         return content;
-//       } else {
-//         throw new Error('No assistant messages found');
-//       }
-//     } else if (runStatus.status === 'requires_action') {
-//       console.log('Run requires action:', runStatus.required_action);
-//       throw new Error('Run requires action, not implemented in this version');
-//     } else {
-//       throw new Error(`Run failed with status: ${runStatus.status}`);
-//     }
-//   } catch (error) {
-//     console.error('Error processing query:', error);
-//     throw error;
-//   }
-// };
-// const storeWorkoutPlan = async (userId, workoutPlan) => {
-//   try {
-//     const WorkoutPlan = mongoose.model(
-//       'WorkoutPlan',
-//       new mongoose.Schema({
-//         user: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true},
-//         description: String,
-//         workoutPlan: Object,
-//         instruction: String,
-//         createdAt: {type: Date, default: Date.now},
-//       }),
-//       'workoutplans'
-//     );
-
-//     await WorkoutPlan.create({
-//       user: userId,
-//       description: workoutPlan.description,
-//       workoutPlan: workoutPlan.workout_plan,
-//       instruction: workoutPlan.instruction,
-//     });
-//   } catch (error) {
-//     console.error('Error storing workout plan:', error);
-//   }
-// };
-
-// module.exports = {
-//   createVectorStore,
-//   createAssistant,
-//   createThread,
-//   updateAssistantWithVectorStore,
-//   processQuery,
-//   storeWorkoutPlan,
-// };
-
+const fs = require('fs');
+const path = require('path');
 const mongoose = require('mongoose');
 const {openai} = require('../config/config');
 const {User} = require('../models');
+const Exercise = require('../models/excercise.model');
 
-const cache = {
-  exerciseFiles: {},
-  assistants: {},
-  vectorStores: {},
-};
+const resources = {};
+let currentLevel = null;
 
-const initializeResources = async userLevel => {
-  const cacheKey = `assistant_${userLevel || 'Basic'}`;
-
-  if (cache.assistants[cacheKey]) {
-    return {
-      vectorStore: cache.vectorStores[cacheKey],
-      assistant: cache.assistants[cacheKey],
-      thread: await createThread(),
-    };
+const waitForVectorStoreReady = async (vectorStoreId, maxAttempts = 120, delay = 1000) => {
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    const vs = await openai.beta.vectorStores.retrieve(vectorStoreId);
+    console.log(`Polling vector store ${vectorStoreId}: Attempt ${attempts}, file_counts:`, vs.file_counts);
+    if (vs.file_counts && vs.file_counts.completed === vs.file_counts.total) {
+      console.log(`Vector store ${vectorStoreId} is ready.`);
+      return vs;
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
+    attempts++;
   }
-
-  const vectorStore = await createVectorStore();
-  const assistant = await createAssistant(userLevel);
-  cache.vectorStores[cacheKey] = vectorStore;
-  cache.assistants[cacheKey] = assistant;
-  await updateAssistantWithVectorStore(assistant.id, vectorStore.id);
-
-  return {
-    vectorStore,
-    assistant,
-    thread: await createThread(),
-  };
+  throw new Error(`Vector store ${vectorStoreId} is not ready after waiting`);
 };
 
-const createVectorStore = async () => {
+const createVectorStore = async userLevel => {
   try {
-    const initialFileIds = [];
-    const vectorStore = await openai.beta.vectorStores.create({
-      name: 'Fitness Data',
-      file_ids: initialFileIds,
-    });
+    const vectorStore = await openai.beta.vectorStores.create({name: 'Fitness Data'});
+    console.log(`Created vector store with id: ${vectorStore.id}`);
 
-    if (!vectorStore.id) {
-      throw new Error('Vector store creation failed: No ID returned');
-    }
-
-    if (!cache.exerciseFiles.fileIds) {
-      const existingFiles = await openai.files.list({purpose: 'assistants'});
-
-      const fileIds = [];
-      const requiredFiles = [
-        'Updated_Basic_Exercises.json',
-        'Updated_Intermediate_Exercises.json',
-        'Advanced_Exercises_Final_Updated.json',
-      ];
-
-      for (const fileName of requiredFiles) {
-        const file = existingFiles.data.find(f => f.filename === fileName);
-        if (file) {
-          fileIds.push(file.id);
-        } else {
-          console.error(`File ${fileName} not found in OpenAI files`);
+    const levelMapping = {
+      Basic: 'Updated_Basic_Exercises.json',
+      Intermediate: 'Updated_Intermediate_Exercises.json',
+      Advanced: 'Advanced_Exercises_Final_Updated.json',
+    };
+    const localFileMapping = {
+      Basic: path.join(__dirname, '..', '..', 'data', 'Updated_Basic_Exercises.json'),
+      Intermediate: path.join(__dirname, '..', '..', 'data', 'Updated_Intermediate_Exercises.json'),
+      Advanced: path.join(__dirname, '..', '..', 'data', 'Advanced_Exercises_Final_Updated.json'),
+    };
+    const fileStreams = Object.keys(levelMapping)
+      .map(level => {
+        const filePath = localFileMapping[level];
+        if (!fs.existsSync(filePath)) {
+          console.error(`File for level ${level} not found at ${filePath}.`);
+          return null;
         }
-      }
+        console.log(`Uploading file for level ${level}: ${levelMapping[level]}`);
+        return fs.createReadStream(filePath);
+      })
+      .filter(Boolean);
 
-      cache.exerciseFiles.fileIds = fileIds;
-    }
+    const fileBatch = await openai.beta.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, {files: fileStreams});
+    console.log(`File batch status: ${fileBatch.status}`);
+    console.log(`File counts: ${JSON.stringify(fileBatch.file_counts)}`);
 
     return vectorStore;
   } catch (error) {
@@ -326,95 +61,71 @@ const createVectorStore = async () => {
   }
 };
 
-const createAssistant = async userLevel => {
+const createAssistant = async (userLevel, vectorStoreId) => {
   try {
-    const level = userLevel || 'Basic';
-    const cacheKey = `assistant_${level}`;
-    if (cache.assistants[cacheKey]) {
-      return cache.assistants[cacheKey];
-    }
+    const normalizedLevel = userLevel || 'Basic';
+    console.log(`Creating assistant for level: ${normalizedLevel} with vector store ID: ${vectorStoreId}`);
 
     const assistant = await openai.beta.assistants.create({
       name: 'Fitness Assistant',
       instructions: `
-        You are a fitness assistant designed to help users achieve their fitness goals. Your responses should be humanized and efficient, especially for casual queries. If the query is not related to fitness, politely decline to answer.
+        You are a fitness assistant designed to help users achieve their fitness goals. Your responses should be humanized and efficient. If the query is not related to fitness, politely decline.
 
-        1. Casual Queries: Handle friendly greetings naturally.
-        2. Non-Fitness Queries: Politely decline if the query is unrelated to fitness.
-        3. Fitness-Related Queries Without Plan Requests: Provide clear, conversational answers to fitness-related queries that don't request a workout plan.
-        
-        **User Level:**
-        ${level}
-        
+        1. Casual Queries: Handle greetings naturally.
+        2. Non-Fitness Queries: Politely decline if unrelated.
+        3. Fitness-Related Queries: Provide clear answers or generate workout plans.
+
+        **User Level: ${normalizedLevel}**
+
         4. Workout Plan Requests:
-        - When a user requests a workout plan, first analyze the duration mentioned.
-        - If the query specifies a duration using terms such as "week", "month", or "quarter", convert the duration to days only. For example, "4 weeks" must be converted to "28 days", "2 months" to "60 days" (or a similar day-based approximation).
-        - **IMPORTANT: NEVER GENERATE A PLAN FOR MORE THAN 30 DAYS. THIS IS A STRICT REQUIREMENT.**
-        - **If the converted duration is less than or equal to 30 days, generate a plan for that exact number of days without any additional instructions.**
-        - **If the converted duration exceeds 30 days, generate ONLY a 30-day plan and then append an instruction at the end of the response stating: "Instruction: Repeat this workout plan for the remaining X days," where X is the difference between the requested duration (converted to days) and 30 days.**
-        - **If no duration is specified, generate a default 30-day plan**.
-        - Select exercises based on the user's level:
-            - If the user's level is **Basic**, fetch exercises from "Updated_Basic_Exercises.json".
-            - If the user's level is **Intermediate**, fetch exercises from "Updated_Intermediate_Exercises.json".
-            - If the user's level is **Advanced**, fetch exercises from "Advanced_Exercises_Final_Updated.json".
+        - Analyze any specified duration (convert weeks/months to days).
+        - **NEVER generate a plan for more than 30 days.**
+        - If duration ≤ 30 days, generate a plan for that many days.
+        - If duration > 30 days, generate a 30-day plan and append: "Instruction: Repeat this workout plan for the remaining X days."
+        - If no duration is specified, generate a default 30-day plan.
+        - IMPORTANT: Although all exercise files are available, you must ONLY select exercises from the file corresponding to the user level.
+          - For Basic users, use "Updated_Basic_Exercises.json".
+          - For Intermediate users, use "Updated_Intermediate_Exercises.json".
+          - For Advanced users, use "Advanced_Exercises_Final_Updated.json".
+          Do not mix exercises from different files.
         
-        5. Unrealistic Goal Handling:
-        - If the user's goal is unrealistic (e.g., "I want to lose 50 kg in 1 month"), first explain in a friendly and supportive manner why it is unrealistic and outline a feasible approach with realistic milestones.
-        - Immediately generate a workout plan for the first 30 days following the output format.
-        - Append an instruction message at the end stating: "Instruction: First, follow this 30-day plan. Then, for the remaining X days, gradually increase sets or reps to help achieve your goal," where X is the number of days beyond the initial 30 days as per the user's original request.
+        5. Unrealistic Goals:
+         - If the user's goal is unrealistic (e.g., "I want to lose 50 kg in 1 month"), first explain in a friendly and supportive manner why it is unrealistic and outline a feasible approach with realistic milestones.
+         - Immediately generate a workout plan for the first 30 days following the output format.
+         - Append an instruction message at the end stating: "Instruction: First, follow this 30-day plan. Then, for the remaining X days, gradually increase sets or reps to help achieve your goal," where X is the number of days beyond the initial 30 days as per the user's original request.
         
         6. Data Sources:
-        - User model: Stores user info (age, weight, fitness level, preferences, etc.)
-        - "Updated_Basic_Exercises.json", "Updated_Intermediate_Exercises.json", "Advanced_Exercises_Final_Updated.json": Exercise lists based on user level.
-        - When available, prioritize BMI and body fat data from the user model.
+        - User details from the user model.
+        - The exercise files uploaded in the vector store.
         
-        7. Output Format (Strict JSON format, no extra text):
+        7. Output Format (strict JSON, no extra text):
         {
-            "description": "One-line description of the purpose of the plan",
+            "description": "One-line description of the plan",
             "workout_plan": {
                 "Day 1": [
                     {
-                        "_id": "Fetch only the numeric Id from the respective level-based exercise file (for example, '26')",
-                        "sets": "Determine the number of sets based on the user's details and goal (for example, 2 or 3-4)",
-                        "reps": "Determine the repetition range appropriate for the exercise (for example, '10-12' or '15-20 minutes' for cardio)",
-                        "interval": "Specify the rest interval (for example, '60 seconds' or '2 min') or note 'continuous' if applicable",
-                        "estimated_time": "Provide an estimated time for the exercise (for example, '20 minutes')",
-                        "estimated_calories": "Provide an estimated calorie burn for the exercise (for example, 150)"
+                        "_id": "numeric exercise id",
+                        "sets": "dynamic value",
+                        "reps": "appropriate range",
+                        "interval": "e.g., '60 seconds'",
+                        "estimated_time": "e.g., '20 minutes'",
+                        "estimated_calories": "e.g., 150"
                     }
                 ],
-                "Day 2": [
-                    "... // Continue for each day based on the converted (or default) duration"
-                ],
+                "Day 2": [ ... ],
                 "..."
             },
-            "instruction": "If applicable, include an instruction message here as specified in the guidelines."
+            "instruction": "Additional instructions if applicable."
         }
         
-        Ensure that:
-        - **YOU MUST NEVER GENERATE A PLAN FOR MORE THAN 30 DAYS, EVEN IF THE USER REQUESTS MORE.**
-        - If the user query mentions a duration using "week", "month", or "quarter", convert that duration into days and structure the plan using only day-based keys.
-        - If the requested duration is less than or equal to 30 days, generate a plan for that exact number of days without appending any extra instruction.
-        - If the requested duration exceeds 30 days, generate ONLY a 30-day plan (no more than 30 days) and include an instruction message for the remaining days.
-        - In the case of an unrealistic goal, first explain why the goal is unrealistic and how to approach it realistically, then generate a 30-day plan followed by an instruction message for additional days.
-        - Do not output any keys like "Week 1", "Month 1", or similar.
-        - Do not use fixed values (e.g., sets: 1) for all parameters; determine each parameter dynamically based on the user's details and fitness goal.
-        - Your response must be in valid JSON format with no extra text.
-        - **If no duration is specified, generate a default 30-day plan**.
-        
-        Handling BMI and Body Fat Data:
-        - Use the following values from the user's profile as the correct parameters:
-            - **BMI: Use the bmi value from the user model**
-            - **Body Fat: Use the bodyFat value from the user model**
-        
-        Consider weight in (lbs) and Height in (cm).
-        Always fetch exercises from the correct level-based file to personalize plans.
+        Ensure that exercise selection is dynamic (e.g., randomized) and only uses exercises from the correct file based on the user level.
       `,
       model: 'gpt-4o-mini',
       tools: [{type: 'file_search'}],
       temperature: 0.1,
     });
 
-    cache.assistants[cacheKey] = assistant;
+    await updateAssistantWithVectorStore(assistant.id, vectorStoreId);
     return assistant;
   } catch (error) {
     console.error('Error creating assistant:', error);
@@ -433,48 +144,79 @@ const createThread = async () => {
 
 const updateAssistantWithVectorStore = async (assistantId, vectorStoreId) => {
   try {
+    if (!vectorStoreId) throw new Error('Vector store ID is null or undefined');
     await openai.beta.assistants.update(assistantId, {
       tool_resources: {
-        file_search: {
-          vector_store_ids: [vectorStoreId],
-        },
+        file_search: {vector_store_ids: [vectorStoreId]},
       },
     });
+    console.log(`Successfully updated assistant ${assistantId} with vector store ${vectorStoreId}`);
   } catch (error) {
     console.error('Error updating assistant with vector store:', error);
     throw error;
   }
 };
 
+const enrichWorkoutPlan = async workoutPlan => {
+  const allowedKeys = [
+    // 'Level',
+    // 'id',
+    'Exercise',
+    'Description',
+    'sets',
+    'reps',
+    'Equipment',
+    'Main muscle worked',
+    'interval',
+    'estimated_time',
+    'estimated_calories',
+  ];
+  const defaultValues = {
+    interval: '60 seconds',
+    estimated_time: '20 minutes',
+    estimated_calories: 150,
+  };
+  const dayKeys = Object.keys(workoutPlan).filter(key => key.startsWith('Day '));
+  for (const day of dayKeys) {
+    for (let i = 0; i < workoutPlan[day].length; i++) {
+      const exerciseEntry = workoutPlan[day][i];
+      const exerciseId = Number(exerciseEntry._id);
+      let mergedEntry = {...exerciseEntry};
+      const exerciseDetails = await Exercise.findOne({id: exerciseId});
+      if (exerciseDetails) {
+        mergedEntry = {...mergedEntry, ...exerciseDetails.toObject()};
+      }
+      const filteredEntry = {};
+      allowedKeys.forEach(key => {
+        if (mergedEntry[key] !== undefined) {
+          filteredEntry[key] = mergedEntry[key];
+        } else if (defaultValues[key] !== undefined) {
+          filteredEntry[key] = defaultValues[key];
+        }
+      });
+      workoutPlan[day][i] = filteredEntry;
+    }
+  }
+  return workoutPlan;
+};
+
 const processQuery = async (threadId, assistantId, query, userId) => {
   try {
-    const userPromise = User.findById(userId);
-
-    const user = await userPromise;
-    if (!user) {
-      throw new Error('User not found');
-    }
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
 
     const durationMatch = query.match(/(\d+)\s*(day|days|week|weeks|month|months)/i);
-    let requestedDuration = null;
+    let requestedDuration = durationMatch ? parseInt(durationMatch[1]) : 30;
     let modifiedQuery = query;
-
     if (durationMatch) {
-      const amount = parseInt(durationMatch[1]);
       const unit = durationMatch[2].toLowerCase();
-
-      if (unit.includes('week')) {
-        requestedDuration = amount * 7;
-      } else if (unit.includes('month')) {
-        requestedDuration = amount * 30;
-      } else {
-        requestedDuration = amount;
-      }
-
-      if (requestedDuration > 30) {
+      if (unit.includes('week')) requestedDuration *= 7;
+      else if (unit.includes('month')) requestedDuration *= 30;
+      if (requestedDuration > 30)
         modifiedQuery = `${query} (NOTE: Only generate a 30-day plan with instructions for the remaining ${requestedDuration -
           30} days)`;
-      }
+    } else {
+      requestedDuration = 30;
     }
 
     await openai.beta.threads.messages.create(threadId, {
@@ -486,93 +228,108 @@ const processQuery = async (threadId, assistantId, query, userId) => {
         BMI: ${user.bmi || 'N/A'}
         Body Fat: ${user.bodyFat || 'N/A'}
         Gender: ${user.gender || 'N/A'}
-        
         User Query: ${modifiedQuery}`,
     });
 
-    const run = await openai.beta.threads.runs.create(threadId, {
-      assistant_id: assistantId,
-    });
-
+    const run = await openai.beta.threads.runs.create(threadId, {assistant_id: assistantId});
     let runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
-    const maxAttempts = 60;
     let attempts = 0;
     let delay = 500;
-
     while (
       runStatus.status !== 'completed' &&
       runStatus.status !== 'failed' &&
       runStatus.status !== 'cancelled' &&
-      attempts < maxAttempts
+      attempts < 60
     ) {
       await new Promise(resolve => setTimeout(resolve, delay));
       runStatus = await openai.beta.threads.runs.retrieve(threadId, run.id);
       attempts++;
-
-      if (delay < 2000) {
-        delay = Math.min(delay * 1.5, 2000);
-      }
+      delay = Math.min(delay * 1.5, 2000);
     }
+    if (runStatus.status !== 'completed') throw new Error(`Run failed with status: ${runStatus.status}`);
 
-    if (runStatus.status === 'completed') {
-      const messages = await openai.beta.threads.messages.list(threadId, {
-        limit: 1,
-        order: 'desc',
-      });
+    const messages = await openai.beta.threads.messages.list(threadId, {limit: 1, order: 'desc'});
+    if (messages.data.length === 0) throw new Error('No assistant messages found');
+    const content = messages.data[0].content.find(c => c.type === 'text')?.text?.value;
+    if (!content) throw new Error('No text content found in assistant response');
 
-      if (messages.data.length > 0) {
-        const content = messages.data[0].content.find(c => c.type === 'text')?.text?.value;
+    try {
+      const parsedJSON = JSON.parse(content);
 
-        if (!content) {
-          throw new Error('No text content found in assistant response');
-        }
+      if (parsedJSON.workout_plan) {
+        const workoutPlan = parsedJSON.workout_plan;
+        const days = Object.keys(workoutPlan).filter(key => key.startsWith('Day '));
 
-        let processedContent = content;
-
-        if (requestedDuration && requestedDuration > 30) {
-          const firstBrace = content.indexOf('{');
-          const lastBrace = content.lastIndexOf('}');
-
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            try {
-              const jsonString = content.substring(firstBrace, lastBrace + 1);
-              const parsedJSON = JSON.parse(jsonString);
-
-              const workoutPlan = parsedJSON.workout_plan || {};
-              const days = Object.keys(workoutPlan).filter(key => key.startsWith('Day '));
-
-              if (days.length > 30) {
-                const filteredPlan = {};
-                for (let i = 1; i <= 30; i++) {
-                  const dayKey = `Day ${i}`;
-                  if (workoutPlan[dayKey]) {
-                    filteredPlan[dayKey] = workoutPlan[dayKey];
-                  }
-                }
-
-                parsedJSON.workout_plan = filteredPlan;
-                if (!parsedJSON.instruction) {
-                  parsedJSON.instruction = `Repeat this workout plan for the remaining ${requestedDuration - 30} days.`;
-                }
-
-                const introText = content.substring(0, firstBrace);
-                processedContent = introText + JSON.stringify(parsedJSON, null, 2);
-              }
-            } catch (error) {
-              console.error('Error post-processing JSON response:', error);
-            }
+        if (days.length > 30) {
+          const filteredPlan = {};
+          for (let i = 1; i <= 30; i++) {
+            const dayKey = `Day ${i}`;
+            if (workoutPlan[dayKey]) filteredPlan[dayKey] = workoutPlan[dayKey];
           }
+          parsedJSON.workout_plan = filteredPlan;
         }
 
-        return processedContent;
-      } else {
-        throw new Error('No assistant messages found');
+        if (requestedDuration <= 30) {
+          delete parsedJSON.instruction;
+        } else {
+          parsedJSON.instruction = `Repeat this workout plan for the remaining ${requestedDuration - 30} days.`;
+        }
+
+        parsedJSON.workout_plan = await enrichWorkoutPlan(parsedJSON.workout_plan);
       }
-    } else if (runStatus.status === 'requires_action') {
-      console.log('Run requires action:', runStatus.required_action);
-      throw new Error('Run requires action, not implemented in this version');
-    } else {
-      throw new Error(`Run failed with status: ${runStatus.status}`);
+
+      return JSON.stringify(parsedJSON, null, 2);
+    } catch (error) {
+      console.log('Failed to parse response directly as JSON, extracting JSON portion');
+
+      const firstBrace = content.indexOf('{');
+      const lastBrace = content.lastIndexOf('}');
+
+      if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+        return content;
+      }
+
+      const jsonString = content.substring(firstBrace, lastBrace + 1);
+      const cleanJsonString = jsonString.replace(/\/\/.*$/gm, '');
+
+      try {
+        let parsedJSON = JSON.parse(cleanJsonString);
+        const introText = content.substring(0, firstBrace).trim();
+
+        if (introText) {
+          parsedJSON = {
+            introduction: introText,
+            ...parsedJSON,
+          };
+        }
+
+        if (parsedJSON.workout_plan) {
+          const workoutPlan = parsedJSON.workout_plan;
+          const days = Object.keys(workoutPlan).filter(key => key.startsWith('Day '));
+
+          if (days.length > 30) {
+            const filteredPlan = {};
+            for (let i = 1; i <= 30; i++) {
+              const dayKey = `Day ${i}`;
+              if (workoutPlan[dayKey]) filteredPlan[dayKey] = workoutPlan[dayKey];
+            }
+            parsedJSON.workout_plan = filteredPlan;
+          }
+
+          if (requestedDuration <= 30) {
+            delete parsedJSON.instruction;
+          } else {
+            parsedJSON.instruction = `Repeat this workout plan for the remaining ${requestedDuration - 30} days.`;
+          }
+
+          parsedJSON.workout_plan = await enrichWorkoutPlan(parsedJSON.workout_plan);
+        }
+
+        return JSON.stringify(parsedJSON, null, 2);
+      } catch (jsonError) {
+        console.error('Error parsing extracted JSON:', jsonError);
+        return content;
+      }
     }
   } catch (error) {
     console.error('Error processing query:', error);
@@ -601,7 +358,6 @@ const getWorkoutPlanModel = () => {
 const storeWorkoutPlan = async (userId, workoutPlan) => {
   try {
     const WorkoutPlan = getWorkoutPlanModel();
-
     await WorkoutPlan.create({
       user: userId,
       description: workoutPlan.description,
@@ -611,6 +367,71 @@ const storeWorkoutPlan = async (userId, workoutPlan) => {
   } catch (error) {
     console.error('Error storing workout plan:', error);
   }
+};
+
+const deleteVectorStore = async vectorStoreId => {
+  if (!vectorStoreId) {
+    console.error('Cannot delete vector store: No vectorStoreId provided');
+    return;
+  }
+
+  try {
+    try {
+      await openai.beta.vectorStores.retrieve(vectorStoreId);
+    } catch (retrieveError) {
+      console.log(`Vector store ${vectorStoreId} does not exist or is already deleted`);
+      return;
+    }
+
+    let success = false;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (!success && attempts < maxAttempts) {
+      try {
+        await openai.beta.vectorStores.del(vectorStoreId);
+        console.log(`Successfully deleted vector store with id: ${vectorStoreId} on attempt ${attempts + 1}`);
+        success = true;
+      } catch (deleteError) {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          console.error(`Failed to delete vector store ${vectorStoreId} after ${maxAttempts} attempts:`, deleteError);
+          throw deleteError;
+        }
+        console.log(`Retry ${attempts}/${maxAttempts} to delete vector store ${vectorStoreId}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  } catch (error) {
+    console.error('Error during vector store deletion process:', error);
+    throw error;
+  }
+};
+
+const initializeResources = async userLevel => {
+  const normalizedLevel = userLevel || 'Basic';
+
+  if (currentLevel && currentLevel !== normalizedLevel) {
+    const oldResources = resources[currentLevel];
+    if (oldResources && oldResources.vectorStore) {
+      console.log(`Deleting old vector store for level ${currentLevel} with id ${oldResources.vectorStore.id}`);
+      await deleteVectorStore(oldResources.vectorStore.id);
+      delete resources[currentLevel];
+    }
+  }
+
+  currentLevel = normalizedLevel;
+
+  if (resources[normalizedLevel]) {
+    return resources[normalizedLevel];
+  }
+
+  const vectorStore = await createVectorStore(normalizedLevel);
+  await waitForVectorStoreReady(vectorStore.id);
+  const assistant = await createAssistant(normalizedLevel, vectorStore.id);
+  const thread = await createThread();
+  resources[normalizedLevel] = {vectorStore, assistant, thread};
+  return resources[normalizedLevel];
 };
 
 module.exports = {

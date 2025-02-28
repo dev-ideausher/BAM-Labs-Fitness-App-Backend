@@ -10,6 +10,9 @@ router.post('/', firebaseAuth('user'), strengthSessionController.logSession);
 
 router.get('/', firebaseAuth('user'), strengthSessionController.getMySessions);
 
+router.patch('/update/:id', firebaseAuth('user'), strengthSessionController.updateSession);
+
+
 router.get("/get/session/byDate/:exerciseId", firebaseAuth('user'), strengthSessionController.getSessionByDate);
 
 router.get('/last-best/:exerciseId', firebaseAuth('user'), strengthSessionController.getLastAndBestSession);

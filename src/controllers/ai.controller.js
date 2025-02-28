@@ -4,14 +4,7 @@ const httpStatus = require('http-status');
 const {WorkoutState} = require('../models/WorkoutState.model');
 const {openai} = require('../config/config');
 
-const {
-  createVectorStore,
-  createAssistant,
-  createThread,
-  updateAssistantWithVectorStore,
-  processQuery,
-  storeWorkoutPlan,
-} = require('../Bam-Ai-chatbot/simpleQAAssistant');
+const {processQuery, storeWorkoutPlan, initializeResources} = require('../Bam-Ai-chatbot/simpleQAAssistant');
 
 const processFitnessQuery = async (req, res) => {
   try {
@@ -24,61 +17,84 @@ const processFitnessQuery = async (req, res) => {
 
     let workoutState = await WorkoutState.findOne({user: userId});
     if (!workoutState) {
-      const vectorStore = await createVectorStore();
-      const assistant = await createAssistant(fitnessLevel);
-      const thread = await createThread();
-
+      const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
       workoutState = new WorkoutState({
         user: userId,
+        fitnessLevel,
         assistantId: assistant.id,
         threadId: thread.id,
         vectorStoreId: vectorStore.id,
       });
       await workoutState.save();
-      await updateAssistantWithVectorStore(assistant.id, vectorStore.id);
     } else {
-      try {
-        await verifyVectorStore(workoutState.vectorStoreId);
-        await verifyAssistant(workoutState.assistantId);
-        await verifyThread(workoutState.threadId);
-      } catch (err) {
-        console.error('Error verifying resources:', err);
-        const vectorStore = await createVectorStore();
-        const assistant = await createAssistant(fitnessLevel);
-        const thread = await createThread();
-
+      if (workoutState.fitnessLevel !== fitnessLevel) {
+        console.log(
+          `Fitness level changed from ${workoutState.fitnessLevel} to ${fitnessLevel}. Reinitializing resources.`
+        );
+        const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
+        workoutState.fitnessLevel = fitnessLevel;
         workoutState.assistantId = assistant.id;
         workoutState.threadId = thread.id;
         workoutState.vectorStoreId = vectorStore.id;
         await workoutState.save();
-        await updateAssistantWithVectorStore(assistant.id, vectorStore.id);
+      } else {
+        try {
+          await verifyVectorStore(workoutState.vectorStoreId);
+          await verifyAssistant(workoutState.assistantId);
+          await verifyThread(workoutState.threadId);
+        } catch (err) {
+          console.error('Error verifying resources:', err);
+          const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
+          workoutState.assistantId = assistant.id;
+          workoutState.threadId = thread.id;
+          workoutState.vectorStoreId = vectorStore.id;
+          await workoutState.save();
+        }
       }
     }
 
     const rawResponse = await processQuery(workoutState.threadId, workoutState.assistantId, query, userId);
-
     let structuredResponse;
-    const firstBrace = rawResponse.indexOf('{');
-    const lastBrace = rawResponse.lastIndexOf('}');
-
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      const jsonString = rawResponse.substring(firstBrace, lastBrace + 1);
-      try {
-        const parsedJSON = JSON.parse(jsonString);
-        const introText = rawResponse.substring(0, firstBrace).trim();
+    try {
+      structuredResponse = JSON.parse(rawResponse);
+      if (!structuredResponse.workout_plan) {
         structuredResponse = {
-          // introduction: introText || null,
-          workout_plan: parsedJSON,
+          introduction: null,
+          workout_plan: structuredResponse,
         };
-      } catch (error) {
-        console.error('Error parsing JSON block:', error);
-        structuredResponse = rawResponse;
       }
-    } else {
-      structuredResponse = rawResponse;
-    }
+    } catch (error) {
+      const {default: stripJsonComments} = await import('strip-json-comments');
+      const cleanedResponse = stripJsonComments(rawResponse);
 
-    if (typeof structuredResponse === 'object' && structuredResponse.workout_plan) {
+      const jsonRegex = /(\{[\s\S]*\})/g;
+      const matches = cleanedResponse.match(jsonRegex);
+
+      if (matches && matches.length > 0) {
+        const jsonString = matches[matches.length - 1];
+        try {
+          const parsedJSON = JSON.parse(jsonString);
+          const introText = cleanedResponse.substring(0, cleanedResponse.indexOf(jsonString)).trim();
+
+          structuredResponse = {
+            introduction: introText || null,
+            workout_plan: parsedJSON,
+          };
+        } catch (jsonError) {
+          console.error('Error parsing JSON block:', jsonError);
+          structuredResponse = {
+            introduction: cleanedResponse,
+            workout_plan: null,
+          };
+        }
+      } else {
+        structuredResponse = {
+          introduction: cleanedResponse,
+          workout_plan: null,
+        };
+      }
+    }
+    if (structuredResponse.workout_plan) {
       try {
         await storeWorkoutPlan(userId, structuredResponse);
       } catch (error) {
@@ -216,4 +232,51 @@ const deleteFile = async fileId => {
     throw error;
   }
 };
-module.exports = {processFitnessQuery, deleteAllFile, deleteAllVectorStore, getAllVectorStore, getFiles};
+const getChatHistoryFromThread = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        status: false,
+        message: 'User not authenticated',
+      });
+    }
+    const userId = req.user._id;
+    const workoutState = await WorkoutState.findOne({user: userId});
+    if (!workoutState || !workoutState.threadId) {
+      return res.status(404).json({
+        status: false,
+        message: 'No chat history found for this user',
+      });
+    }
+
+    console.log(`Retrieving chat history for thread: ${workoutState.threadId} for user: ${userId}`);
+    const messages = await openai.beta.threads.messages.list(workoutState.threadId);
+
+    const chatHistory = messages.data.map((message, index) => ({
+      index: index + 1,
+      role: message.role,
+      content: message.content,
+    }));
+
+    return res.status(200).json({
+      status: true,
+      data: {chatHistory},
+      message: 'Chat history retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Error retrieving chat history:', error.message);
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to retrieve chat history',
+    });
+  }
+};
+
+module.exports = {
+  processFitnessQuery,
+  deleteAllFile,
+  deleteAllVectorStore,
+  getAllVectorStore,
+  getFiles,
+  getChatHistoryFromThread,
+};
