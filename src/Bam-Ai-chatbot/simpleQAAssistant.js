@@ -254,7 +254,7 @@ const processQuery = async (threadId, assistantId, query, userId) => {
     if (!content) throw new Error('No text content found in assistant response');
 
     try {
-      const parsedJSON = JSON.parse(content);
+      let parsedJSON = JSON.parse(content);
 
       if (parsedJSON.workout_plan) {
         const workoutPlan = parsedJSON.workout_plan;
@@ -275,9 +275,27 @@ const processQuery = async (threadId, assistantId, query, userId) => {
           parsedJSON.instruction = `Repeat this workout plan for the remaining ${requestedDuration - 30} days.`;
         }
 
-        parsedJSON.workout_plan = await enrichWorkoutPlan(parsedJSON.workout_plan);
+        const enrichedPlan = await enrichWorkoutPlan(parsedJSON.workout_plan);
+        const transformedPlan = Object.keys(enrichedPlan)
+          .filter(key => key.startsWith('Day '))
+          .sort((a, b) => parseInt(a.split(' ')[1]) - parseInt(b.split(' ')[1]))
+          .map(dayKey => ({
+            day: dayKey.replace('Day ', ''),
+            workout_list: enrichedPlan[dayKey],
+          }));
+
+        const responseObj = {
+          response: {
+            description: parsedJSON.description,
+            workout_plan: transformedPlan,
+            instruction: parsedJSON.instruction,
+          },
+        };
+
+        return JSON.stringify(responseObj, null, 2);
       }
 
+      console.log('Successfully parsed response as JSON');
       return JSON.stringify(parsedJSON, null, 2);
     } catch (error) {
       console.log('Failed to parse response directly as JSON, extracting JSON portion');
@@ -322,7 +340,24 @@ const processQuery = async (threadId, assistantId, query, userId) => {
             parsedJSON.instruction = `Repeat this workout plan for the remaining ${requestedDuration - 30} days.`;
           }
 
-          parsedJSON.workout_plan = await enrichWorkoutPlan(parsedJSON.workout_plan);
+          const enrichedPlan = await enrichWorkoutPlan(parsedJSON.workout_plan);
+          const transformedPlan = Object.keys(enrichedPlan)
+            .filter(key => key.startsWith('Day '))
+            .sort((a, b) => parseInt(a.split(' ')[1]) - parseInt(b.split(' ')[1]))
+            .map(dayKey => ({
+              day: dayKey.replace('Day ', ''),
+              workout_list: enrichedPlan[dayKey],
+            }));
+
+          const responseObj = {
+            response: {
+              description: parsedJSON.description,
+              workout_plan: transformedPlan,
+              instruction: parsedJSON.instruction,
+            },
+          };
+
+          return JSON.stringify(responseObj, null, 2);
         }
 
         return JSON.stringify(parsedJSON, null, 2);
@@ -336,7 +371,6 @@ const processQuery = async (threadId, assistantId, query, userId) => {
     throw error;
   }
 };
-
 let WorkoutPlanModel;
 const getWorkoutPlanModel = () => {
   if (!WorkoutPlanModel) {

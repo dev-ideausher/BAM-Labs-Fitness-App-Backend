@@ -54,9 +54,13 @@ const processFitnessQuery = async (req, res) => {
     }
 
     const rawResponse = await processQuery(workoutState.threadId, workoutState.assistantId, query, userId);
+
     let structuredResponse;
     try {
       structuredResponse = JSON.parse(rawResponse);
+      if (structuredResponse.response) {
+        structuredResponse = structuredResponse.response;
+      }
       if (!structuredResponse.workout_plan) {
         structuredResponse = {
           introduction: null,
