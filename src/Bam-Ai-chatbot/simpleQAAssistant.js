@@ -286,6 +286,8 @@ const processQuery = async (threadId, assistantId, query, userId) => {
 
         const responseObj = {
           response: {
+            // introduction: parsedJSON.introduction,
+            ...(parsedJSON.introduction && { introduction: parsedJSON.introduction }),
             description: parsedJSON.description,
             workout_plan: transformedPlan,
             instruction: parsedJSON.instruction,
@@ -351,6 +353,8 @@ const processQuery = async (threadId, assistantId, query, userId) => {
 
           const responseObj = {
             response: {
+              // introduction: parsedJSON.introduction,
+              ...(parsedJSON.introduction && { introduction: parsedJSON.introduction }),
               description: parsedJSON.description,
               workout_plan: transformedPlan,
               instruction: parsedJSON.instruction,
