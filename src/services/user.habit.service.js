@@ -1,4 +1,4 @@
-const {UserHabit} = require('../models');
+const {UserHabit,Habit} = require('../models');
 const {UserHabitLog} = require('../models/userHabitLog.model');
 const {getAllData} = require('../utils/getAllData');
 const ApiError = require('../utils/ApiError');
@@ -31,9 +31,28 @@ const updateUserHabit = async (userHabitId, habit) => {
   return await UserHabit.findByIdAndUpdate(userHabitId, habit, {new: true});
 };
 
+// const deleteUserHabit = async userHabitId => {
+//   return await UserHabit.findByIdAndDelete(userHabitId);
+// };
+
 const deleteUserHabit = async userHabitId => {
-  return await UserHabit.findByIdAndDelete(userHabitId);
+  await UserHabitLog.deleteMany({ userHabitId });
+  const userHabit = await UserHabit.findById(userHabitId);
+  if (!userHabit) {
+    throw new Error("UserHabit not found");
+  }
+  
+  await UserHabit.findByIdAndDelete(userHabitId);
+  const habit = await Habit.findById(userHabit.habitId);
+  
+  if (habit && habit.__t === 'CustomHabit') {
+    await Habit.findByIdAndDelete(userHabit.habitId);
+  }
+  
+  return;
 };
+
+
 const calculateStats = async userHabit => {
   const logs = await UserHabitLog.find({
     userHabitId: userHabit._id,
