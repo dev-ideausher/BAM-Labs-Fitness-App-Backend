@@ -166,7 +166,7 @@ const enrichWorkoutPlan = async workoutPlan => {
     'sets',
     'reps',
     'Equipment',
-    'Main muscle worked',
+    // 'Main muscle worked',
     'interval',
     'estimated_time',
     'estimated_calories',
