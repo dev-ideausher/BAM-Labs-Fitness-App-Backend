@@ -3,6 +3,7 @@ const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
 const {WorkoutState} = require('../models/WorkoutState.model');
 const {openai} = require('../config/config');
+const {addChatEntry, getChatHistory, clearChatHistory} = require('../services/chatHistory.service');
 
 const {processQuery, storeWorkoutPlan, initializeResources} = require('../Bam-Ai-chatbot/simpleQAAssistant');
 
@@ -104,6 +105,12 @@ const processFitnessQuery = async (req, res) => {
       } catch (error) {
         console.error('Error storing workout plan:', error);
       }
+    }
+
+    try {
+      await addChatEntry(userId, query, structuredResponse);
+    } catch (chatError) {
+      console.error('Error saving chat entry:', chatError);
     }
 
     return res.status(200).json({response: structuredResponse});
@@ -275,6 +282,52 @@ const getChatHistoryFromThread = async (req, res) => {
     });
   }
 };
+const getChatHistoryFromDB = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        status: false,
+        message: 'User not authenticated',
+      });
+    }
+    const userId = req.user._id;
+    const history = await getChatHistory(userId);
+    return res.status(200).json({
+      status: true,
+      data: {chatHistory: history},
+      message: 'Chat history retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Error retrieving chat history from DB:', error.message);
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to retrieve chat history',
+    });
+  }
+};
+
+const clearChatHistoryEndpoint = async (req, res) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        status: false,
+        message: 'User not authenticated',
+      });
+    }
+    const userId = req.user._id;
+    await clearChatHistory(userId);
+    return res.status(200).json({
+      status: true,
+      message: 'Chat history cleared successfully',
+    });
+  } catch (error) {
+    console.error('Error clearing chat history:', error.message);
+    return res.status(500).json({
+      status: false,
+      message: 'Failed to clear chat history',
+    });
+  }
+};
 
 module.exports = {
   processFitnessQuery,
@@ -283,4 +336,6 @@ module.exports = {
   getAllVectorStore,
   getFiles,
   getChatHistoryFromThread,
+  getChatHistoryFromDB,
+  clearChatHistoryEndpoint,
 };

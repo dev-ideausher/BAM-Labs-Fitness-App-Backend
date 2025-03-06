@@ -13,6 +13,7 @@ const {ContactUs} = require('./contact.model');
 const {Content} = require("./content.model")
 const {userNotification} = require('./userNotification.model');
 const { WorkoutState } = require('./WorkoutState.model');
+const {ChatHistory} = require('./chatEntrySchema.model');
 
 module.exports = {
   User,
@@ -32,5 +33,6 @@ module.exports = {
   ContactUs,
   Content,
   userNotification,
-  WorkoutState
+  WorkoutState,
+  ChatHistory
 };

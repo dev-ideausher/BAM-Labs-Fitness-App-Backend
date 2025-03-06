@@ -145,10 +145,11 @@ const updateSession = catchAsync(async (req, res) => {
     });
   }
   const { weight, sets, reps } = req.body;
+  const totalReps = sets * reps;
 
   const updatedSession = await StrengthSession.findOneAndUpdate(
     { _id: id, userId: req.user._id },
-    { $set: { weight, sets, reps } },
+    { $set: { weight, sets, reps,totalReps } },
     { new: true }
   );
 
