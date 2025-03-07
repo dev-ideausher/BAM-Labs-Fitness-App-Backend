@@ -26,13 +26,19 @@ const addChatEntry = async (userId, query, response) => {
 
 const getChatHistory = async userId => {
   try {
-    const chatHistory = await ChatHistory.findOne({user: userId});
+    const chatHistory = await ChatHistory.findOne({ user: userId });
+    if (chatHistory && chatHistory.chatEntries) {
+      chatHistory.chatEntries.sort(
+        (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+      );
+    }
     return chatHistory ? chatHistory.chatEntries : [];
   } catch (error) {
     console.error('Error getting chat history:', error);
     throw error;
   }
 };
+
 const clearChatHistory = async userId => {
   try {
     return await ChatHistory.findOneAndUpdate({user: userId}, {$set: {chatEntries: []}}, {new: true});

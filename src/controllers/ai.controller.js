@@ -282,6 +282,14 @@ const getChatHistoryFromThread = async (req, res) => {
     });
   }
 };
+const transformChatHistory = (entries) => {
+  return entries.map(entry => ({
+    query: entry.query,
+    "chat-response": { response: entry.response },
+    timestamp: entry.timestamp,
+    _id: entry._id
+  }));
+};
 const getChatHistoryFromDB = async (req, res) => {
   try {
     if (!req.user || !req.user._id) {
@@ -292,9 +300,11 @@ const getChatHistoryFromDB = async (req, res) => {
     }
     const userId = req.user._id;
     const history = await getChatHistory(userId);
+    const transformedHistory = transformChatHistory(history);
     return res.status(200).json({
       status: true,
-      data: {chatHistory: history},
+      // data: {chatHistory: history},
+      data: { chatHistory: transformedHistory },
       message: 'Chat history retrieved successfully',
     });
   } catch (error) {
