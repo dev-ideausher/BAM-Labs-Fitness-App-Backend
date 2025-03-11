@@ -1,10 +1,10 @@
-const  mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const {StrengthSession, StrengthBestSession} = require('../models');
 const {getAllData} = require('../utils/getAllData');
 const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
 
-const logStrengthSession = async (strengthSession) => {
-  const { userId, exerciseId, dateTime } = strengthSession;
+const logStrengthSession = async strengthSession => {
+  const {userId, exerciseId, dateTime} = strengthSession;
   const existingSession = await StrengthSession.findOne({
     userId,
     exerciseId,
@@ -20,7 +20,6 @@ const logStrengthSession = async (strengthSession) => {
   return await StrengthSession.create(strengthSession);
 };
 
-
 const getAllSessions = async (query, populateConfig) => {
   const data = await getAllData(StrengthSession, query, populateConfig);
   return data;
@@ -34,17 +33,23 @@ const getSessionByDate = async (userId, exerciseId, date) => {
   const startOfDay = new Date(date);
   const endOfDay = new Date(date);
   endOfDay.setUTCHours(23, 59, 59, 999);
-  return await StrengthSession.findOne({userId, exerciseId, dateTime: {
-    $gte: startOfDay,
-    $lte: endOfDay,
-  },}).populate({
-    path: "exerciseId",
-    select: "-createdAt -updatedAt -isDeleted -__v",
-    populate: [
-      { path: "primaryCategory", model: "PrimaryCategory" ,  select: "-createdAt -updatedAt -isDeleted -__v",}, // Replace CategoryModel with the actual model for primaryCategory
-      { path: "targetedMuscle", model: "TargetedMuscles" ,  select: "-createdAt -updatedAt -isDeleted -__v",},   // Replace MuscleModel with the actual model for targetedMuscle
-    ],
-  }).sort({dateTime: -1});
+  return await StrengthSession.findOne({
+    userId,
+    exerciseId,
+    dateTime: {
+      $gte: startOfDay,
+      $lte: endOfDay,
+    },
+  })
+    .populate({
+      path: 'exerciseId',
+      select: '-createdAt -updatedAt -isDeleted -__v',
+      populate: [
+        {path: 'primaryCategory', model: 'PrimaryCategory', select: '-createdAt -updatedAt -isDeleted -__v'}, // Replace CategoryModel with the actual model for primaryCategory
+        {path: 'targetedMuscle', model: 'TargetedMuscles', select: '-createdAt -updatedAt -isDeleted -__v'}, // Replace MuscleModel with the actual model for targetedMuscle
+      ],
+    })
+    .sort({dateTime: -1});
 };
 
 const getLastSession = async (userId, exerciseId) => {
@@ -73,43 +78,34 @@ const getLastSession = async (userId, exerciseId) => {
 //     }
 //   }
 //   return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
-// };
-const checkAndLogBestSession = async (session) => {
-  const { userId, sessionId } = session;
-  const { exerciseId, totalReps, weight } = session._doc;
+// // };
+const checkAndLogBestSession = async session => {
+  const {userId, sessionId} = session;
+  const {exerciseId, totalReps, weight} = session._doc;
 
-  const bestSession = await StrengthBestSession.findOne({ userId, exerciseId })
-    .sort({ totalReps: -1, 'sessionId.weight': -1 }) // Sort by totalReps first, then by weight
-    .populate('sessionId');
-
-  let updatedBestSession = bestSession;
+  let bestSession = await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId');
   let isUpdated = false;
 
   if (!bestSession) {
-    // If no best session exists, create a new one
-    const data = await StrengthBestSession.create({ userId, exerciseId, sessionId });
-    updatedBestSession = await StrengthBestSession.findOne({ _id: data._id }).populate('sessionId');
+    bestSession = await StrengthBestSession.create({userId, exerciseId, sessionId});
+    bestSession = await StrengthBestSession.findOne({_id: bestSession._id}).populate('sessionId');
     isUpdated = true;
   } else {
-    let shouldUpdate = false;
-
-    if (totalReps !== undefined) {
-      shouldUpdate = totalReps > (bestSession.sessionId.totalReps || 0);
-    } else {
-      shouldUpdate = weight > (bestSession.sessionId.weight || 0);
-    }
-
-    if (shouldUpdate) {
-      updatedBestSession = await StrengthBestSession.findByIdAndUpdate(
+    const currentBest = bestSession.sessionId;
+    if (
+      totalReps > (currentBest.totalReps || 0) ||
+      (totalReps === (currentBest.totalReps || 0) && weight > (currentBest.weight || 0))
+    ) {
+      bestSession = await StrengthBestSession.findByIdAndUpdate(
         bestSession._id,
-        { userId, exerciseId, sessionId },
-        { new: true }
+        {userId, exerciseId, sessionId},
+        {new: true}
       ).populate('sessionId');
       isUpdated = true;
     }
   }
 
-  return { bestSession: updatedBestSession.sessionId, updated: isUpdated };
+  return {bestSession: bestSession.sessionId, updated: isUpdated};
 };
 
 const getUserBestSessions = async (userId, query, populateConfig) => {
@@ -118,7 +114,9 @@ const getUserBestSessions = async (userId, query, populateConfig) => {
 };
 
 const getUserExerciseBestSession = async (userId, exerciseId) => {
-  return await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId').sort({ 'sessionId.totalReps': -1, 'sessionId.weight': -1 });
+  return await StrengthBestSession.findOne({userId, exerciseId})
+    .populate('sessionId')
+    .sort({'sessionId.totalReps': -1, 'sessionId.weight': -1});
 };
 
 const getWeeklyStrengthMap = async (userId, exerciseId) => {
@@ -131,32 +129,29 @@ const getMonthlyStrengthMap = async (userId, exerciseId, year, month) => {
 const getDatedStrengthSessionsMapp = async (userId, startDate, endDate, exerciseIds = []) => {
   const query = {
     userId,
-    dateTime: { $gte: startDate, $lte: endDate },
+    dateTime: {$gte: startDate, $lte: endDate},
   };
 
   if (exerciseIds.length > 0) {
-    query.exerciseId = { $in: exerciseIds };
+    query.exerciseId = {$in: exerciseIds};
   }
 
   return await getMapsByDate(StrengthSession, query, startDate, endDate);
 };
 
-
 const getDatedStrengthMap = async (userId, exerciseId, startDate, endDate) => {
   return await getMapsByDate(StrengthSession, {userId, exerciseId}, startDate, endDate);
 };
 
-
 async function calculateMonthlyAvgWeight(userId, exerciseId) {
   const currentYear = new Date().getFullYear();
-
 
   const results = await StrengthSession.aggregate([
     // Match records for the given user, exercise, and current year
     {
       $match: {
         userId: userId,
-        exerciseId:new mongoose.Types.ObjectId(exerciseId),
+        exerciseId: new mongoose.Types.ObjectId(exerciseId),
         dateTime: {
           $gte: new Date(`${currentYear}-01-01T00:00:00Z`),
           $lte: new Date(`${currentYear}-12-31T23:59:59Z`),
@@ -166,16 +161,15 @@ async function calculateMonthlyAvgWeight(userId, exerciseId) {
     // Group by month and calculate average weight
     {
       $group: {
-        _id: { $month: '$dateTime' }, // Group by month
-        avgWeight: { $avg: '$weight' },
+        _id: {$month: '$dateTime'}, // Group by month
+        avgWeight: {$avg: '$weight'},
       },
     },
     // Sort by month
     {
-      $sort: { _id: 1 },
+      $sort: {_id: 1},
     },
   ]);
-
 
   // Initialize an array with all months set to 0
   const avgWeightPerMonth = [];
@@ -187,16 +181,13 @@ async function calculateMonthlyAvgWeight(userId, exerciseId) {
   }
 
   // Populate the array with actual averages from the query
-  results.forEach((result) => {
+  results.forEach(result => {
     const index = result._id - 1; // Adjust month (1-indexed) to array index (0-indexed)
     avgWeightPerMonth[index].avgWeight = result.avgWeight;
   });
 
   return avgWeightPerMonth;
 }
-
-
-
 
 module.exports = {
   logStrengthSession,
@@ -211,5 +202,5 @@ module.exports = {
   getDatedStrengthMap,
   calculateMonthlyAvgWeight,
   getSessionByDate,
-  getDatedStrengthSessionsMapp
+  getDatedStrengthSessionsMapp,
 };
