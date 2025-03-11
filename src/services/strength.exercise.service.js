@@ -15,12 +15,14 @@ const getAllExercises = async (query, populateConfig) => {
 };
 
 const getExerciseById = async id => {
-  return await StrengthExercise.findById(id).populate('primaryCategory', "-createdAt -updatedAt -isDeleted").populate('targetedMuscle', "-createdAt -updatedAt -isDeleted");
+  return await StrengthExercise.findById(id)
+    .populate('primaryCategory', '-createdAt -updatedAt -isDeleted')
+    .populate('targetedMuscle', '-createdAt -updatedAt -isDeleted');
 };
 
 const getUserCustomExercises = async (userId, query, populateConfig) => {
   // const data = await getAllData(CustomStrengthExercise, query, populateConfig);
-  const data = await getAllData(CustomStrengthExercise, { userId, ...query }, populateConfig);
+  const data = await getAllData(CustomStrengthExercise, {userId, ...query}, populateConfig);
   // console.log(data);
   return data;
 };
@@ -32,6 +34,15 @@ const getCustomExerciseById = async id => {
 const updateExerciseById = async (id, update) => {
   return await StrengthExercise.findByIdAndUpdate(id, update, {new: true});
 };
+const deleteCustomExercise = async (exerciseId, userId) => {
+  const exercise = await CustomStrengthExercise.findOne({_id: exerciseId, userId});
+  if (!exercise) {
+    return null;
+  }
+  await exercise.deleteOne();
+
+  return exercise;
+};
 
 module.exports = {
   createStrenghtExercise,
@@ -41,4 +52,5 @@ module.exports = {
   getUserCustomExercises,
   getCustomExerciseById,
   updateExerciseById,
+  deleteCustomExercise,
 };

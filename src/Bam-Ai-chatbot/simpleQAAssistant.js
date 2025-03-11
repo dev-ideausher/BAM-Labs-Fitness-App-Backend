@@ -287,7 +287,7 @@ const processQuery = async (threadId, assistantId, query, userId) => {
         const responseObj = {
           response: {
             // introduction: parsedJSON.introduction,
-            ...(parsedJSON.introduction && { introduction: parsedJSON.introduction }),
+            ...(parsedJSON.introduction && {introduction: parsedJSON.introduction}),
             description: parsedJSON.description,
             workout_plan: transformedPlan,
             instruction: parsedJSON.instruction,
@@ -354,7 +354,7 @@ const processQuery = async (threadId, assistantId, query, userId) => {
           const responseObj = {
             response: {
               // introduction: parsedJSON.introduction,
-              ...(parsedJSON.introduction && { introduction: parsedJSON.introduction }),
+              ...(parsedJSON.introduction && {introduction: parsedJSON.introduction}),
               description: parsedJSON.description,
               workout_plan: transformedPlan,
               instruction: parsedJSON.instruction,
@@ -385,7 +385,10 @@ const getWorkoutPlanModel = () => {
         description: String,
         workoutPlan: Object,
         instruction: String,
-        createdAt: {type: Date, default: Date.now},
+        // createdAt: {type: Date, default: Date.now},
+        startDate: { type: Date, required: true },
+        // Tracks when the plan was last updated
+        updatedAt: { type: Date, default: Date.now }
       }),
       'workoutplans'
     );
@@ -396,12 +399,17 @@ const getWorkoutPlanModel = () => {
 const storeWorkoutPlan = async (userId, workoutPlan) => {
   try {
     const WorkoutPlan = getWorkoutPlanModel();
-    await WorkoutPlan.create({
-      user: userId,
-      description: workoutPlan.description,
-      workoutPlan: workoutPlan.workout_plan,
-      instruction: workoutPlan.instruction,
-    });
+    await WorkoutPlan.findOneAndUpdate(
+      { user: userId },
+      {
+        description: workoutPlan.description,
+        workoutPlan: workoutPlan.workout_plan,
+        instruction: workoutPlan.instruction,
+        $setOnInsert: { startDate: new Date() },
+        updatedAt: new Date()
+      },
+      { new: true, upsert: true }
+    );
   } catch (error) {
     console.error('Error storing workout plan:', error);
   }
@@ -480,4 +488,6 @@ module.exports = {
   processQuery,
   storeWorkoutPlan,
   initializeResources,
+  getWorkoutPlanModel,
+  waitForVectorStoreReady,
 };

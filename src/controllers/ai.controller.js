@@ -5,7 +5,8 @@ const {WorkoutState} = require('../models/WorkoutState.model');
 const {openai} = require('../config/config');
 const {addChatEntry, getChatHistory, clearChatHistory} = require('../services/chatHistory.service');
 
-const {processQuery, storeWorkoutPlan, initializeResources} = require('../Bam-Ai-chatbot/simpleQAAssistant');
+const {processQuery, storeWorkoutPlan, initializeResources,getWorkoutPlanModel} = require('../Bam-Ai-chatbot/simpleQAAssistant');
+const {detectScheduleQuery, processExistingPlanQuery} = require('../Bam-Ai-chatbot/assistantManagerScheduleTime');
 
 const processFitnessQuery = async (req, res) => {
   try {
@@ -15,7 +16,17 @@ const processFitnessQuery = async (req, res) => {
     if (!query) {
       return res.status(400).json({error: 'No query provided'});
     }
-
+    const WorkoutPlan = getWorkoutPlanModel();
+    const existingPlan = await WorkoutPlan.findOne({ user: userId }).sort({ createdAt: -1 });
+    
+    if (existingPlan) {
+      const isScheduleQuery = await detectScheduleQuery(query);
+      if (isScheduleQuery) {
+        console.log("Detected schedule query, proceeding with schedule query handling.");
+        return await processExistingPlanQuery(req, res, userId, query, existingPlan);
+      }
+    }
+    
     let workoutState = await WorkoutState.findOne({user: userId});
     if (!workoutState) {
       const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);

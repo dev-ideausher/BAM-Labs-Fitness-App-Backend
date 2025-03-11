@@ -13,5 +13,6 @@ router.get('/:id', firebaseAuth('user'), strengthExerciseController.getExerciseB
 router.post('/custom', firebaseAuth('user'), strengthExerciseController.createCustomExercise);
 
 router.get('/', firebaseAuth('All'), strengthExerciseController.getAllExercises);
+router.delete('/custom/:id', firebaseAuth('user'), strengthExerciseController.deleteCustomExercise);
 
 module.exports = router;

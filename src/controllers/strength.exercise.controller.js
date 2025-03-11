@@ -56,9 +56,26 @@ const getExerciseById = catchAsync(async (req, res) => {
   });
 });
 
+const deleteCustomExercise = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const exercise = await strengthExerciseService.deleteCustomExercise(id, req.user._id);
+  if (!exercise) {
+    return res.status(404).json({
+      status: false,
+      message: 'Custom Exercise not found or not authorized'
+    });
+  }
+  res.status(200).json({
+    status: true,
+    message: 'Custom Exercise deleted successfully'
+  });
+});
+
+
 module.exports = {
   createExercise,
   createCustomExercise,
   getAllExercises,
-  getExerciseById
+  getExerciseById,
+  deleteCustomExercise
 };
