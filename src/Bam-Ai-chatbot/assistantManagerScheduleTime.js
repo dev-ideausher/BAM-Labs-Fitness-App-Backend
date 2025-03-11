@@ -2,6 +2,7 @@ const {openai} = require('../config/config');
 const mongoose = require('mongoose');
 const {User} = require('../models');
 const {createThread} = require('./simpleQAAssistant');
+const {addChatEntry} = require('../services/chatHistory.service');
 
 const waitForRunToComplete = async (threadId, runId, maxAttempts = 30, delay = 500) => {
   let attempts = 0;
@@ -273,6 +274,8 @@ Do not include any internal calculations or meta-comments in your answer.
     if (!content) {
       throw new Error('No text content found in assistant response');
     }
+
+    await addChatEntry(userId, query, {introduction: content, workout_plan: null});
 
     return res.status(200).json({response: {introduction: content, workout_plan: null}});
   } catch (error) {
