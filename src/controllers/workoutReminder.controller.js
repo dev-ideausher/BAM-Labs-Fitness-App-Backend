@@ -34,41 +34,77 @@ const createWorkoutReminder = catchAsync(async (req, res) => {
   res.status(httpStatus.CREATED).send(workoutReminder);
 });
 
+// const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
+//   try {
+//     const jobName = `workout-reminder-${userId}`;
+//     // const notificationTime = new Date(reminderTime);
+//     const notificationTime = new Date(reminderTime.getTime() - offset * 60000);
+
+//     await agenda.cancel({name: jobName});
+//     agenda.define(jobName, async job => {
+//       try {
+//         const {userId} = job.attrs.data;
+//         await sendToTopic(
+//           userId,
+//           `user_${userId}`,
+//           {
+//             title: 'Workout Time! 💪',
+//             body: "It's time for your scheduled workout. Let's get moving!",
+//           },
+//           {
+//             type: 'WORKOUT_REMINDER',
+//             timestamp: new Date().toISOString(),
+//           }
+//         );
+//       } catch (error) {
+//         console.error('Error sending workout reminder notification:', error);
+//         throw error;
+//       }
+//     });
+
+//     await agenda.schedule(notificationTime, jobName, {
+//       userId: userId.toString(),
+//     });
+//   } catch (error) {
+//     console.error('Error scheduling workout reminder:', error);
+//     throw error;
+//   }
+// };
 const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
-  try {
-    const jobName = `workout-reminder-${userId}`;
-    // const notificationTime = new Date(reminderTime);
-    const notificationTime = new Date(reminderTime.getTime() - offset * 60000);
+  const utcReminderTime = new Date(reminderTime.getTime() - offset * 60000);
+  const hour = utcReminderTime.getUTCHours();
+  const minute = utcReminderTime.getUTCMinutes();
 
-    await agenda.cancel({name: jobName});
-    agenda.define(jobName, async job => {
-      try {
-        const {userId} = job.attrs.data;
-        await sendToTopic(
-          userId,
-          `user_${userId}`,
-          {
-            title: 'Workout Time! 💪',
-            body: "It's time for your scheduled workout. Let's get moving!",
-          },
-          {
-            type: 'WORKOUT_REMINDER',
-            timestamp: new Date().toISOString(),
-          }
-        );
-      } catch (error) {
-        console.error('Error sending workout reminder notification:', error);
-        throw error;
-      }
-    });
+  const cronTime = `${minute} ${hour} * * *`;
 
-    await agenda.schedule(notificationTime, jobName, {
-      userId: userId.toString(),
-    });
-  } catch (error) {
-    console.error('Error scheduling workout reminder:', error);
-    throw error;
-  }
+  const jobName = `workout-reminder-${userId}`;
+
+  agenda.define(jobName, async job => {
+    const {userId} = job.attrs.data;
+    try {
+      await sendToTopic(
+        userId,
+        `user_${userId}`,
+        {
+          title: 'Workout Time! 💪',
+          body: "It's time for your scheduled workout. Let's get moving!",
+        },
+        {
+          type: 'WORKOUT_REMINDER',
+          timestamp: new Date().toISOString(),
+        }
+      );
+      console.log(`Workout reminder notification sent for user ${userId}`);
+    } catch (error) {
+      console.error(`Error sending workout reminder for user ${userId}:`, error);
+    }
+  });
+
+  await agenda.cancel({name: jobName});
+
+  await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
+
+  // console.log(`Scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 };
 
 const deleteWorkoutReminder = catchAsync(async (req, res) => {

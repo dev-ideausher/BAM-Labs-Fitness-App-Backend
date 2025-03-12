@@ -1,4 +1,4 @@
-const {UserHabit,Habit} = require('../models');
+const {UserHabit, Habit} = require('../models');
 const {UserHabitLog} = require('../models/userHabitLog.model');
 const {getAllData} = require('../utils/getAllData');
 const ApiError = require('../utils/ApiError');
@@ -31,27 +31,19 @@ const updateUserHabit = async (userHabitId, habit) => {
   return await UserHabit.findByIdAndUpdate(userHabitId, habit, {new: true});
 };
 
-// const deleteUserHabit = async userHabitId => {
-//   return await UserHabit.findByIdAndDelete(userHabitId);
-// };
-
 const deleteUserHabit = async userHabitId => {
-  await UserHabitLog.deleteMany({ userHabitId });
+  await UserHabitLog.deleteMany({userHabitId});
   const userHabit = await UserHabit.findById(userHabitId);
   if (!userHabit) {
-    throw new Error("UserHabit not found");
+    throw new Error('UserHabit not found');
   }
-  
-  await UserHabit.findByIdAndDelete(userHabitId);
+  await userHabit.deleteOne();
   const habit = await Habit.findById(userHabit.habitId);
-  
   if (habit && habit.__t === 'CustomHabit') {
     await Habit.findByIdAndDelete(userHabit.habitId);
   }
-  
   return;
 };
-
 
 const calculateStats = async userHabit => {
   const logs = await UserHabitLog.find({
@@ -315,37 +307,33 @@ const getUserPreferredTime = userHabit => {
   return defaultTime;
 };
 
-const getHabitStatistics = async (userId) => {
+const getHabitStatistics = async userId => {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  const userHabits = await UserHabit.find({ userId });
-  
+  const userHabits = await UserHabit.find({userId});
+
   const habitLogs = await UserHabitLog.find({
     userId,
-    dateTime: { $gte: thirtyDaysAgo }
+    dateTime: {$gte: thirtyDaysAgo},
   });
 
   const activeHabitIds = [...new Set(habitLogs.map(log => log.userHabitId.toString()))];
   const activeHabits = activeHabitIds.length;
 
-  const habitStats = await Promise.all(
-    userHabits.map(habit => calculateStats(habit))
-  );
-  const averageCompletionRate = habitStats.reduce((sum, stat) => sum + stat.completionRate, 0) / 
-    (habitStats.length || 1);
+  const habitStats = await Promise.all(userHabits.map(habit => calculateStats(habit)));
+  const averageCompletionRate =
+    habitStats.reduce((sum, stat) => sum + stat.completionRate, 0) / (habitStats.length || 1);
 
   const bestStreak = Math.max(...habitStats.map(stat => stat.bestStreak));
-  const uniqueDays = [...new Set(
-    habitLogs.map(log => new Date(log.dateTime).toDateString())
-  )].length;
+  const uniqueDays = [...new Set(habitLogs.map(log => new Date(log.dateTime).toDateString()))].length;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const habitsCompletedToday = await UserHabitLog.countDocuments({
     userId,
-    dateTime: { $gte: today },
-    status: 'completed'
+    dateTime: {$gte: today},
+    status: 'completed',
   });
 
   return {
@@ -353,7 +341,7 @@ const getHabitStatistics = async (userId) => {
     averageCompletionRate: Math.round(averageCompletionRate * 10) / 10,
     bestStreak,
     ActiveDays: uniqueDays,
-    habitsCompletedToday
+    habitsCompletedToday,
   };
 };
 

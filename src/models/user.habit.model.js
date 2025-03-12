@@ -99,11 +99,12 @@ const userHabitSchma = new mongoose.Schema(
   }
 });
 
- userHabitSchma.pre('remove', async function() {
+userHabitSchma.pre('deleteOne', { document: true, query: false }, async function(next) {
   try {
     await this.constructor.cancelHabitNotifications(this._id);
+    next();
   } catch (error) {
-    console.error('Error canceling notifications:', error);
+    next(error);
   }
 });
 
