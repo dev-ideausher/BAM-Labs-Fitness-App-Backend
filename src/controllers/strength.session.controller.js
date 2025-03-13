@@ -133,32 +133,55 @@ const getDatedStrengthMap = catchAsync(async (req, res) => {
 });
 
 const updateSession = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  
+  const {id} = req.params;
+
   const allowedFields = ['weight', 'sets', 'reps'];
   const updates = Object.keys(req.body);
   const invalidFields = updates.filter(field => !allowedFields.includes(field));
   if (invalidFields.length > 0) {
     return res.status(400).json({
       status: false,
-      message: `These fields are not editable: ${invalidFields.join(', ')}. Only weight, sets, and reps can be updated.`
+      message: `These fields are not editable: ${invalidFields.join(
+        ', '
+      )}. Only weight, sets, and reps can be updated.`,
     });
   }
-  const { weight, sets, reps } = req.body;
-  const totalReps = sets * reps;
+  // const { weight, sets, reps } = req.body;
+  // const totalReps = sets * reps;
 
-  const updatedSession = await StrengthSession.findOneAndUpdate(
-    { _id: id, userId: req.user._id },
-    { $set: { weight, sets, reps,totalReps } },
-    { new: true }
-  );
+  // const updatedSession = await StrengthSession.findOneAndUpdate(
+  //   { _id: id, userId: req.user._id },
+  //   { $set: { weight, sets, reps,totalReps } },
+  //   { new: true }
+  // );
 
-  if (!updatedSession) {
+  // if (!updatedSession) {
+  //   return res.status(404).json({
+  //     status: false,
+  //     message: 'Session not found or not authorized',
+  //   });
+  // }
+
+  const existingSession = await StrengthSession.findOne({_id: id, userId: req.user._id});
+  if (!existingSession) {
     return res.status(404).json({
       status: false,
       message: 'Session not found or not authorized',
     });
   }
+
+  const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
+  const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
+  const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
+
+  const totalReps = safeSets * safeReps;
+  const totalWeight = safeWeight * totalReps;
+
+  const updatedSession = await StrengthSession.findOneAndUpdate(
+    {_id: id, userId: req.user._id},
+    {$set: {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight}},
+    {new: true}
+  );
 
   res.status(200).json({
     status: true,
@@ -166,7 +189,6 @@ const updateSession = catchAsync(async (req, res) => {
     session: updatedSession,
   });
 });
-
 
 module.exports = {
   logSession,

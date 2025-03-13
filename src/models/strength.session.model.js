@@ -37,6 +37,10 @@ const strengthSessionSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
+    totalWeight: {
+      type: Number,
+      default: 0,
+    },
   },
   {timestamps: true}
 );
