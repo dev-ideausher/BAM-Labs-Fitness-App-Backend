@@ -22,7 +22,13 @@ const strengthExerciseSchema = new mongoose.Schema(
       type: Array,
       enums: ["date", "sessionTime", "reps", "sets", "weight", "totalReps","totalWeight"],
       required: true,
-      default: ["date", "sessionTime", "reps", "sets", "weight", "totalReps", "totalWeight"]
+      default: ["date", "sessionTime", "reps", "sets", "weight", "totalReps", "totalWeight"],
+      set: function (value) {
+        if (Array.isArray(value) && !value.includes("totalWeight")) {
+          return [...value, "totalWeight"];
+        }
+        return value;
+      }
     },
     video:{
       key: {
