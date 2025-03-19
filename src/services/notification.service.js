@@ -10,6 +10,7 @@ const createNotification = async (notificationData) => {
     ...notificationData,
     isByAdmin: true,
   });
+  // console.log('Created notification:', notification);
 
   if (notification.type === 'PUSH') {
     const job = agenda.create('send push notification', {
