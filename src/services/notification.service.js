@@ -12,15 +12,19 @@ const createNotification = async (notificationData) => {
   });
   // console.log('Created notification:', notification);
 
-  if (notification.type === 'PUSH') {
-    const job = agenda.create('send push notification', {
-      notificationId: notification._id,
-    });
+if (notification.type === 'PUSH') {
+  const job = agenda.create('send push notification', {
+    notificationId: notification._id,
+  });
+  await job.schedule(notification.schedule).save();
+} else if (notification.type === 'Email') {
+  const job = agenda.create('send email notification', {
+    notificationId: notification._id,
+  });
+  await job.schedule(notification.schedule).save();
+}
 
-    await job.schedule(notification.schedule).save();
-  }
-
-  return notification;
+return notification;
 };
 
 const getAllNotifications = async (filters, options) => {

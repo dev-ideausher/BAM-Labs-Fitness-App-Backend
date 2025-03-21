@@ -12,6 +12,7 @@ const ApiError = require('./utils/ApiError');
 const {errorConverter, errorHandler} = require('./middlewares/error');
 const agenda = require('./config/agenda');
 require('./Jobs/sendNotification')(agenda);
+require('./Jobs/emailNotification')(agenda);
 
 const app = express();
 

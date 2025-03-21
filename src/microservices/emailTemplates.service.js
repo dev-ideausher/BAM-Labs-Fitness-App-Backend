@@ -1,4 +1,4 @@
-const getWelcomeEmailTemplate = ({ name, email, password }) => `
+const getWelcomeEmailTemplate = ({name, email, password}) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -71,7 +71,7 @@ const getWelcomeEmailTemplate = ({ name, email, password }) => `
 </html>
 `;
 
-const getForgotPasswordEmailTemplate = (resetLink) => `
+const getForgotPasswordEmailTemplate = resetLink => `
   <!DOCTYPE html>
   <html>
   <head>
@@ -119,7 +119,60 @@ const getForgotPasswordEmailTemplate = (resetLink) => `
   </html>
 `;
 
+const getNotificationEmailTemplate = ({title, description}) => ` 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f9fc; font-family: Arial, sans-serif;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: white; border-radius: 8px; padding: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <!-- Logo -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <img 
+          src="https://res.cloudinary.com/db1ckrpjk/image/upload/v1737206503/x9nbbfa5btebcbcyrdvs.png" 
+          alt="Logo" 
+          style="width: 200px; height: auto;" 
+        />
+      </div>
+
+      <!-- Content -->
+      <div style="color: #333; line-height: 1.6;">
+        <h2 style="color: #2c3e50; text-align: center; margin-bottom: 20px;">
+          ${title}
+        </h2>
+        
+        <p style="margin-bottom: 15px;">
+          ${description}
+        </p>
+
+        <p style="margin: 20px 0;">
+          If you have any questions, our support team is always here to help.
+        </p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+          <p style="margin: 5px 0;">Best regards,</p>
+          <p style="margin: 5px 0; font-weight: bold; color: #2c3e50;">
+            [Your Platform Name] Team
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+      <p>© 2025 [Your Platform Name]. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
+`;
+
 module.exports = {
   getForgotPasswordEmailTemplate,
   getWelcomeEmailTemplate,
+  getNotificationEmailTemplate,
 };
