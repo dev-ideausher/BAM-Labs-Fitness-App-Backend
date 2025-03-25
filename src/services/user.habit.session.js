@@ -91,6 +91,7 @@ const createUserHabitLog = async (data) => {
     return await UserHabitLog.create(data);
   }
   if (habitLog.counterForDay >= userHabit.numberOfTimes) {
+    await UserHabit.findByIdAndUpdate(userHabit._id, { status: 'completed' });
     throw new ApiError(httpStatus.BAD_REQUEST, 'Done for the day: You can log this habit again tomorrow');
   }
   habitLog.counterForDay += 1;

@@ -66,12 +66,19 @@ const userHabitSchma = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['active', 'completed'],
+      default: 'active',
+    },
   },
 
   {timestamps: true}
 );
- userHabitSchma.index({ userId: 1 });
- userHabitSchma.index({ habitId: 1 });
+userHabitSchma.index(
+  { userId: 1, habitId: 1 },
+  { unique: true, partialFilterExpression: { status: 'active' } }
+);
  
  userHabitSchma.pre('save', async function(next) {
   try {

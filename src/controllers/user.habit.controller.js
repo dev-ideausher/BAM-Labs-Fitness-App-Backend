@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const {userHabitService, userHabitLogService} = require('../services');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const {Habit} = require('../models');
+const {Habit,UserHabit} = require('../models');
 
 const validateHabitData = reqBody => {
   const {
@@ -104,6 +104,15 @@ const validateHabitData = reqBody => {
 };
 
 const createUserHabit = catchAsync(async (req, res) => {
+  const existingActiveHabit = await UserHabit.findOne({
+    userId: req.user._id,
+    habitId: req.body.habitId,
+    status: 'active'
+  });
+
+  if (existingActiveHabit) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'A habit cycle for this habit already exists. Please complete or remove the existing entry before creating a new one.');
+  }
   const validHabit = await validateHabitData({...req.body, userId: req.user._id});
   const habit = await userHabitService.createUserHabit(validHabit);
   res.status(200).json({
