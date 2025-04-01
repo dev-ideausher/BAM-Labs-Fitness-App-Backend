@@ -328,11 +328,28 @@ const getHabitStatistics = async userId => {
   const bestStreak = Math.max(...habitStats.map(stat => stat.bestStreak));
   const uniqueDays = [...new Set(habitLogs.map(log => new Date(log.dateTime).toDateString()))].length;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // const today = new Date();
+  // today.setHours(0, 0, 0, 0);
+  // const habitsCompletedToday = await UserHabitLog.countDocuments({
+  //   userId,
+  //   dateTime: {$gte: today},
+  //   status: 'completed',
+  // });
+
+  const userOffsetMinutes =
+    userHabits.length > 0 && typeof userHabits[0].offset === 'number' ? userHabits[0].offset : 0;
+
+  const nowUtc = new Date();
+
+  const localNow = new Date(nowUtc.getTime() + userOffsetMinutes * 60000);
+
+  localNow.setHours(0, 0, 0, 0);
+
+  const localStartOfDayUtc = new Date(localNow.getTime() - userOffsetMinutes * 60000);
+
   const habitsCompletedToday = await UserHabitLog.countDocuments({
     userId,
-    dateTime: {$gte: today},
+    dateTime: {$gte: localStartOfDayUtc},
     status: 'completed',
   });
 
