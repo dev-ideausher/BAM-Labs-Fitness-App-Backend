@@ -34,6 +34,8 @@ async function updateUserById(id, newDetails) {
   user.gender = newDetails?.gender ? newDetails.gender : user.gender;
   user.weight = newDetails?.weight ? newDetails.weight : user.weight;
   user.height = newDetails?.height ? newDetails.height : user.height;
+  user.bmi     = newDetails?.bmi !== undefined     ? newDetails.bmi     : user.bmi;
+  user.bodyFat = newDetails?.bodyFat !== undefined ? newDetails.bodyFat : user.bodyFat;
   if (newDetails?.age !== undefined) {
     const currentAge = user.age;
     if (currentAge && Math.abs(currentAge - newDetails.age) > 1) {
@@ -52,7 +54,7 @@ async function updateUserById(id, newDetails) {
   } else if (user.dob) {
     user.age = calculateAge(user.dob);
   }
-  recalculateMetrics(user);
+  // recalculateMetrics(user);
 
   const saved = await user.save();
   return saved;

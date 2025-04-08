@@ -33,11 +33,11 @@ const userSchema = new mongoose.Schema(
     },
     bmi: {
       type: Number,
-      default: null,
+      // default: null,
     },
     bodyFat: {
       type: Number,
-      default: null,
+      // default: null,
     },
     phone: {
       type: String,
@@ -127,41 +127,41 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-userSchema.pre('save', function(next) {
-  if (this.weight && this.height) {
-    const heightInMeters = this.height / 100;
-    this.bmi = this.weight / heightInMeters ** 2;
-  } else {
-    this.bmi = null;
-  }
-  if (this.dob) {
-    const currentDate = new Date();
-    const birthDate = new Date(this.dob);
-    this.age = currentDate.getFullYear() - birthDate.getFullYear();
-    const monthDifference = currentDate.getMonth() - birthDate.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())) {
-      this.age--;
-    }
-  } else {
-    this.age = null;
-  }
+// userSchema.pre('save', function(next) {
+//   if (this.weight && this.height) {
+//     const heightInMeters = this.height / 100;
+//     this.bmi = this.weight / heightInMeters ** 2;
+//   } else {
+//     this.bmi = null;
+//   }
+//   if (this.dob) {
+//     const currentDate = new Date();
+//     const birthDate = new Date(this.dob);
+//     this.age = currentDate.getFullYear() - birthDate.getFullYear();
+//     const monthDifference = currentDate.getMonth() - birthDate.getMonth();
+//     if (monthDifference < 0 || (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())) {
+//       this.age--;
+//     }
+//   } else {
+//     this.age = null;
+//   }
 
-  if (this.gender && this.bmi && this.age) {
-    if (this.gender === 'male') {
-      this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 16.2;
-    } else if (this.gender === 'female') {
-      this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 5.4;
-    } else if (this.gender === 'other') {
-      this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 10.8;
-    } else {
-      this.bodyFat = null;
-    }
-  } else {
-    this.bodyFat = null;
-  }
+//   if (this.gender && this.bmi && this.age) {
+//     if (this.gender === 'male') {
+//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 16.2;
+//     } else if (this.gender === 'female') {
+//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 5.4;
+//     } else if (this.gender === 'other') {
+//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 10.8;
+//     } else {
+//       this.bodyFat = null;
+//     }
+//   } else {
+//     this.bodyFat = null;
+//   }
 
-  next();
-});
+//   next();
+// });
 
 userSchema.plugin(paginate);
 

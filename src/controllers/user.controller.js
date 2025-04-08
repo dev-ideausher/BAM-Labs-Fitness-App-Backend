@@ -49,7 +49,7 @@ const deleteUser = catchAsync(async (req, res) => {
 });
 
 const updateUserMetrics = catchAsync(async (req, res) => {
-  const {weight, height, age} = req.body;
+  const {weight, height, age, bmi, bodyFat} = req.body;
 
   if (age !== undefined) {
     if (typeof age !== 'number' || !Number.isInteger(age)) {
@@ -59,11 +59,25 @@ const updateUserMetrics = catchAsync(async (req, res) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Age must be between 10 and 120 years');
     }
   }
-  const updatedUser = await userService.updateUserById(req.user._id, {
-    weight,
-    height,
-    age,
-  });
+  if (bmi !== undefined) {
+    if (typeof bmi !== 'number') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'BMI must be a number');
+    }
+    if (bmi < 5 || bmi > 100) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'BMI must be between 5 and 100');
+    }
+  }
+  if (bodyFat !== undefined) {
+    if (typeof bodyFat !== 'number') {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Body fat must be a number');
+    }
+    if (bodyFat < 1 || bodyFat > 75) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Body fat must be between 1% and 75%');
+    }
+  }
+  const updates = {weight, height, age, bmi, bodyFat};
+
+  const updatedUser = await userService.updateUserById(req.user._id, updates);
   if (!updatedUser) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
