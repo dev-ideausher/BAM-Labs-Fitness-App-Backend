@@ -58,54 +58,74 @@ const getLastSession = async (userId, exerciseId) => {
 
 // const checkAndLogBestSession = async session => {
 //   const {userId, sessionId} = session;
-//   const {exerciseId, totalReps} = session._doc;
+//   const {exerciseId, totalReps, weight} = session._doc;
 
-//   const bestSession = await StrengthBestSession.findOne({userId, exerciseId}).sort({totalReps: -1}).populate('sessionId');
-//   let updatedBestSession = bestSession;
-
+//   let bestSession = await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId');
 //   let isUpdated = false;
-//   if(!bestSession){
-//     const data = await StrengthBestSession.create({userId, exerciseId, sessionId});
-//     const updatedData = await StrengthBestSession.findOne({_id:data._id}).populate('sessionId');
-//     updatedBestSession = updatedData;
 
+//   if (!bestSession) {
+//     bestSession = await StrengthBestSession.create({userId, exerciseId, sessionId});
+//     bestSession = await StrengthBestSession.findOne({_id: bestSession._id}).populate('sessionId');
 //     isUpdated = true;
 //   } else {
-//     if(totalReps > bestSession.sessionId.totalReps){
-//       const data = await StrengthBestSession.findByIdAndUpdate(bestSession._id, {userId, exerciseId, sessionId}, {new: true}).populate('sessionId');
-//       updatedBestSession = data;
+//     const currentBest = bestSession.sessionId;
+//     if (
+//       totalReps > (currentBest.totalReps || 0) ||
+//       (totalReps === (currentBest.totalReps || 0) && weight > (currentBest.weight || 0))
+//     ) {
+//       bestSession = await StrengthBestSession.findByIdAndUpdate(
+//         bestSession._id,
+//         {userId, exerciseId, sessionId},
+//         {new: true}
+//       ).populate('sessionId');
 //       isUpdated = true;
 //     }
 //   }
-//   return { bestSession:updatedBestSession.sessionId, updated: isUpdated};
-// // };
-const checkAndLogBestSession = async session => {
-  const {userId, sessionId} = session;
-  const {exerciseId, totalReps, weight} = session._doc;
 
-  let bestSession = await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId');
+//   return {bestSession: bestSession.sessionId, updated: isUpdated};
+// };
+
+const checkAndLogBestSession = async session => {
+  const { userId, sessionId } = session;
+  const { exerciseId, totalReps, weight } = session._doc;
+  const totalWork = weight * totalReps;
+
+  let bestSession = await StrengthBestSession
+    .findOne({ userId, exerciseId })
+    .populate('sessionId');
   let isUpdated = false;
 
   if (!bestSession) {
-    bestSession = await StrengthBestSession.create({userId, exerciseId, sessionId});
-    bestSession = await StrengthBestSession.findOne({_id: bestSession._id}).populate('sessionId');
+    bestSession = await StrengthBestSession.create({ userId, exerciseId, sessionId });
+    bestSession = await StrengthBestSession
+      .findById(bestSession._id)
+      .populate('sessionId');
     isUpdated = true;
   } else {
-    const currentBest = bestSession.sessionId;
+    const cb = bestSession.sessionId;
+    const currentWork = (cb.weight || 0) * (cb.totalReps || 0);
     if (
-      totalReps > (currentBest.totalReps || 0) ||
-      (totalReps === (currentBest.totalReps || 0) && weight > (currentBest.weight || 0))
+      totalWork > currentWork ||
+      (
+        totalWork === currentWork &&
+        weight > (cb.weight || 0)
+      ) ||
+      (
+        totalWork === currentWork &&
+        weight === (cb.weight || 0) &&
+        totalReps > (cb.totalReps || 0)
+      )
     ) {
       bestSession = await StrengthBestSession.findByIdAndUpdate(
         bestSession._id,
-        {userId, exerciseId, sessionId},
-        {new: true}
+        { userId, exerciseId, sessionId },
+        { new: true }
       ).populate('sessionId');
       isUpdated = true;
     }
   }
 
-  return {bestSession: bestSession.sessionId, updated: isUpdated};
+  return { bestSession: bestSession.sessionId, updated: isUpdated };
 };
 
 const getUserBestSessions = async (userId, query, populateConfig) => {
