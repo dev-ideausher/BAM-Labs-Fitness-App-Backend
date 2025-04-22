@@ -81,6 +81,8 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
 
   console.log(`Scheduling workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 
+  await agenda.cancel({ name: jobName });
+  console.log(`Canceled any existing reminder job for user ${userId}`);
   agenda.define(jobName, async (job) => {
     const { userId } = job.attrs.data;
     try {
@@ -102,19 +104,30 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
     } catch (error) {
       console.error(`Error sending workout reminder for user ${userId}:`, error);
     }
+    
+    if (!job.attrs.nextRunAt) {
+      console.log(`No next run scheduled for job ${jobName}. Attempting to reschedule.`);
+      job.repeatEvery(cronTime, { timezone: 'UTC' });
+      await job.save();
+      console.log(`Job rescheduled. Next run at: ${job.attrs.nextRunAt}`);
+    } else {
+      console.log(`Next run already scheduled for: ${job.attrs.nextRunAt}`);
+    }
   });
-
-  await agenda.cancel({ name: jobName });
-  console.log(`Canceled any existing reminder job for user ${userId}`);
 
   const existingJob = await agenda.jobs({ name: jobName });
   console.log(`Found ${existingJob.length} existing job(s) for user ${userId}`);
 
-  if (existingJob.length === 0) {
-    await agenda.every(cronTime, jobName, { userId }, { timezone: 'UTC' });
-    console.log(`Scheduled new workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
-  } else {
-    console.log(`Reminder job for user ${userId} is already scheduled.`);
+  const job = agenda.create(jobName, { userId });
+  job.repeatEvery(cronTime, { timezone: 'UTC' });
+
+  try {
+    await job.save();
+    console.log(`Job saved successfully. Job ID: ${job.attrs._id}`);
+    console.log(`Job type: ${job.attrs.type}`);
+    console.log(`Next run scheduled for: ${job.attrs.nextRunAt}`);
+  } catch (err) {
+    console.error(`Failed to save job: ${err.message}`);
   }
 };
 
