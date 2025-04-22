@@ -35,40 +35,40 @@ const createWorkoutReminder = catchAsync(async (req, res) => {
 });
 
 // const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
-//   try {
-//     const jobName = `workout-reminder-${userId}`;
-//     // const notificationTime = new Date(reminderTime);
-//     const notificationTime = new Date(reminderTime.getTime() - offset * 60000);
+//   const utcReminderTime = new Date(reminderTime.getTime() - offset * 60000);
+//   const hour = utcReminderTime.getUTCHours();
+//   const minute = utcReminderTime.getUTCMinutes();
 
-//     await agenda.cancel({name: jobName});
-//     agenda.define(jobName, async job => {
-//       try {
-//         const {userId} = job.attrs.data;
-//         await sendToTopic(
-//           userId,
-//           `user_${userId}`,
-//           {
-//             title: 'Workout Time! 💪',
-//             body: "It's time for your scheduled workout. Let's get moving!",
-//           },
-//           {
-//             type: 'WORKOUT_REMINDER',
-//             timestamp: new Date().toISOString(),
-//           }
-//         );
-//       } catch (error) {
-//         console.error('Error sending workout reminder notification:', error);
-//         throw error;
-//       }
-//     });
+//   const cronTime = `${minute} ${hour} * * *`;
 
-//     await agenda.schedule(notificationTime, jobName, {
-//       userId: userId.toString(),
-//     });
-//   } catch (error) {
-//     console.error('Error scheduling workout reminder:', error);
-//     throw error;
-//   }
+//   const jobName = `workout-reminder-${userId}`;
+
+//   agenda.define(jobName, async job => {
+//     const {userId} = job.attrs.data;
+//     try {
+//       await sendToTopic(
+//         userId,
+//         `user_${userId}`,
+//         {
+//           title: 'Workout Time! 💪',
+//           body: "It's time for your scheduled workout. Let's get moving!",
+//         },
+//         {
+//           type: 'WORKOUT_REMINDER',
+//           timestamp: new Date().toISOString(),
+//         }
+//       );
+//       console.log(`Workout reminder notification sent for user ${userId}`);
+//     } catch (error) {
+//       console.error(`Error sending workout reminder for user ${userId}:`, error);
+//     }
+//   });
+
+//   await agenda.cancel({name: jobName});
+
+//   await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
+
+//   // console.log(`Scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 // };
 const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   const utcReminderTime = new Date(reminderTime.getTime() - offset * 60000);
@@ -79,9 +79,13 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
 
   const jobName = `workout-reminder-${userId}`;
 
-  agenda.define(jobName, async job => {
-    const {userId} = job.attrs.data;
+  console.log(`Scheduling workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
+
+  agenda.define(jobName, async (job) => {
+    const { userId } = job.attrs.data;
     try {
+      console.log(`Executing workout reminder for user ${userId}`);
+
       await sendToTopic(
         userId,
         `user_${userId}`,
@@ -100,11 +104,18 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
     }
   });
 
-  await agenda.cancel({name: jobName});
+  await agenda.cancel({ name: jobName });
+  console.log(`Canceled any existing reminder job for user ${userId}`);
 
-  await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
+  const existingJob = await agenda.jobs({ name: jobName });
+  console.log(`Found ${existingJob.length} existing job(s) for user ${userId}`);
 
-  // console.log(`Scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
+  if (existingJob.length === 0) {
+    await agenda.every(cronTime, jobName, { userId }, { timezone: 'UTC' });
+    console.log(`Scheduled new workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
+  } else {
+    console.log(`Reminder job for user ${userId} is already scheduled.`);
+  }
 };
 
 const deleteWorkoutReminder = catchAsync(async (req, res) => {
@@ -138,4 +149,5 @@ module.exports = {
   createWorkoutReminder,
   deleteWorkoutReminder,
   getMyReminder,
+  scheduleWorkoutReminder
 };
