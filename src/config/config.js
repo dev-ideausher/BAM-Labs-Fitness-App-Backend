@@ -1,9 +1,10 @@
 const Joi = require('joi');
 const path = require('path');
-const dotnev = require('dotenv');
+// const dotnev = require('dotenv');
+const dotenv = require('dotenv');
 const { OpenAI } = require('openai');
 
-dotnev.config({path: path.join(__dirname, '../../.env')});
+dotenv.config({path: path.join(__dirname, '../../.env')});
 
 // schema of env files for validation
 const envVarsSchema = Joi.object()
