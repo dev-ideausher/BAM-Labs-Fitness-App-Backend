@@ -78,13 +78,12 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   const minute = utcReminderTime.getUTCMinutes();
 
   const cronTime = `${minute} ${hour} * * *`;
-
   const jobName = `workout-reminder-${userId}`;
 
   console.log(`Scheduling workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 
-  agenda.define(jobName, async (job) => {
-    const { userId } = job.attrs.data;
+  const jobHandler = async job => {
+    const {userId} = job.attrs.data;
     try {
       console.log(`Executing workout reminder for user ${userId}`);
 
@@ -120,7 +119,9 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
         const retryDelay = retryDelays[retryIndex] || retryDelays[retryDelays.length - 1];
         const nextRetry = new Date(Date.now() + retryDelay * 60000);
 
-        console.log(`Retry ${job.attrs.failCount}/${maxRetries} for user ${userId} scheduled at ${nextRetry.toISOString()}`);
+        console.log(
+          `Retry ${job.attrs.failCount}/${maxRetries} for user ${userId} scheduled at ${nextRetry.toISOString()}`
+        );
 
         job.attrs.nextRunAt = nextRetry;
         await job.save();
@@ -133,7 +134,7 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
             jobName,
             failCount: job.attrs.failCount,
             lastError: error.message || 'Unknown error',
-            timestamp: new Date()
+            timestamp: new Date(),
           });
         } catch (logError) {
           console.error(`Failed to log notification failure for user ${userId}:`, logError);
@@ -143,16 +144,26 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
         await job.save();
       }
     }
-  }, { concurrency: 1 });
+  };
 
   try {
-    await agenda.cancel({ name: jobName });
+    await agenda.cancel({name: jobName});
     console.log(`Canceled any existing reminder job for user ${userId}`);
 
-    await agenda.every(cronTime, jobName, { userId }, { timezone: 'UTC' });
-    console.log(`Successfully scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
+    const definitions = agenda._definitions;
+    const isJobDefined = definitions[jobName] !== undefined;
 
-    const scheduledJobs = await agenda.jobs({ name: jobName });
+    if (!isJobDefined) {
+      agenda.define(jobName, {concurrency: 1}, jobHandler);
+      console.log(`Defined new job handler for ${jobName}`);
+    }
+
+    await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
+    console.log(
+      `Successfully scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`
+    );
+
+    const scheduledJobs = await agenda.jobs({name: jobName});
     if (scheduledJobs.length === 0) {
       throw new Error(`Failed to schedule workout reminder for user ${userId}`);
     }
@@ -162,7 +173,8 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
     throw error;
   }
 };
-const logNotificationFailure = async (failureData) => {
+
+const logNotificationFailure = async failureData => {
   console.error('NOTIFICATION FAILURE:', failureData);
   return true;
 };
