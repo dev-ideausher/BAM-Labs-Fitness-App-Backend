@@ -100,13 +100,17 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
         }
       );
 
-      if (notificationResult && notificationResult.id) {
-        console.log(`Workout reminder notification sent for user ${userId} with ID: ${notificationResult.id}`);
+      if (notificationResult) {
+        console.log(
+          `Workout reminder notification sent for user ${userId} with response:`,
+          typeof notificationResult === 'object' ? JSON.stringify(notificationResult) : notificationResult
+        );
+
         job.attrs.failCount = 0;
         await job.save();
       } else {
-        console.warn(`Workout reminder sent for user ${userId} but no notification ID returned`);
-        throw new Error('No notification ID returned from sendToTopic');
+        console.warn(`Workout reminder attempted for user ${userId} but no response received`);
+        throw new Error('No response received from sendToTopic');
       }
     } catch (error) {
       job.attrs.failCount = (job.attrs.failCount || 0) + 1;
