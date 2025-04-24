@@ -33,6 +33,45 @@ const createWorkoutReminder = catchAsync(async (req, res) => {
 
   res.status(httpStatus.CREATED).send(workoutReminder);
 });
+
+// const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
+//   const utcReminderTime = new Date(reminderTime.getTime() - offset * 60000);
+//   const hour = utcReminderTime.getUTCHours();
+//   const minute = utcReminderTime.getUTCMinutes();
+
+//   const cronTime = `${minute} ${hour} * * *`;
+//   const jobName = `workout-reminder-${userId}`;
+
+//   agenda.define(jobName, async (job) => {
+//     const { userId } = job.attrs.data;
+//     try {
+//       await sendToTopic(
+//         userId,
+//         `user_${userId}`,
+//         {
+//           title: 'Workout Time! 💪',
+//           body: "It's time for your scheduled workout. Let's get moving!",
+//         },
+//         {
+//           type: 'WORKOUT_REMINDER',
+//           timestamp: new Date().toISOString(),
+//         }
+//       );
+//       console.log(`Workout reminder notification sent for user ${userId}`);
+//     } catch (error) {
+//       console.error(`Error sending workout reminder for user ${userId}:`, error);
+//     }
+//   });
+
+//   await agenda.cancel({ name: jobName });
+
+//   await agenda.every(cronTime, jobName, { userId }, { timezone: 'UTC' });
+
+//   console.log(
+//     `Scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`
+//   );
+// };
+
 const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   const utcReminderTime = new Date(reminderTime.getTime() - offset * 60000);
   const hour = utcReminderTime.getUTCHours();
@@ -44,12 +83,12 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
 
   console.log(`Scheduling workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 
-  agenda.define(jobName, async job => {
-    const {userId} = job.attrs.data;
+  agenda.define(jobName, async (job) => {
+    const { userId } = job.attrs.data;
     try {
       console.log(`Executing workout reminder for user ${userId}`);
 
-      await sendToTopic(
+      const notificationResult = await sendToTopic(
         userId,
         `user_${userId}`,
         {
@@ -61,26 +100,71 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
           timestamp: new Date().toISOString(),
         }
       );
-      console.log(`Workout reminder notification sent for user ${userId}`);
+
+      if (notificationResult && notificationResult.id) {
+        console.log(`Workout reminder notification sent for user ${userId} with ID: ${notificationResult.id}`);
+        job.attrs.failCount = 0;
+        await job.save();
+      } else {
+        console.warn(`Workout reminder sent for user ${userId} but no notification ID returned`);
+        throw new Error('No notification ID returned from sendToTopic');
+      }
     } catch (error) {
-      console.error(`Error sending workout reminder for user ${userId}:`, error);
+      job.attrs.failCount = (job.attrs.failCount || 0) + 1;
+
+      const maxRetries = 3;
+      const retryDelays = [1, 5, 15];
+
+      if (job.attrs.failCount <= maxRetries) {
+        const retryIndex = job.attrs.failCount - 1;
+        const retryDelay = retryDelays[retryIndex] || retryDelays[retryDelays.length - 1];
+        const nextRetry = new Date(Date.now() + retryDelay * 60000);
+
+        console.log(`Retry ${job.attrs.failCount}/${maxRetries} for user ${userId} scheduled at ${nextRetry.toISOString()}`);
+
+        job.attrs.nextRunAt = nextRetry;
+        await job.save();
+      } else {
+        console.error(`All retry attempts failed for user ${userId}. Last error:`, error);
+
+        try {
+          await logNotificationFailure({
+            userId,
+            jobName,
+            failCount: job.attrs.failCount,
+            lastError: error.message || 'Unknown error',
+            timestamp: new Date()
+          });
+        } catch (logError) {
+          console.error(`Failed to log notification failure for user ${userId}:`, logError);
+        }
+
+        job.attrs.failCount = 0;
+        await job.save();
+      }
     }
-  });
+  }, { concurrency: 1 });
 
-  await agenda.cancel({name: jobName});
-  console.log(`Canceled any existing reminder job for user ${userId}`);
+  try {
+    await agenda.cancel({ name: jobName });
+    console.log(`Canceled any existing reminder job for user ${userId}`);
 
-  await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
-  const existingJob = await agenda.jobs({name: jobName});
-  console.log(`Found ${existingJob.length} existing job(s) for user ${userId}`);
+    await agenda.every(cronTime, jobName, { userId }, { timezone: 'UTC' });
+    console.log(`Successfully scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
 
-  console.log(`Scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
-  if (existingJob.length === 0) {
-    await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
-    console.log(`Scheduled new workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`);
-  } else {
-    console.log(`Reminder job for user ${userId} is already scheduled.`);
+    const scheduledJobs = await agenda.jobs({ name: jobName });
+    if (scheduledJobs.length === 0) {
+      throw new Error(`Failed to schedule workout reminder for user ${userId}`);
+    }
+    console.log(`Verified ${scheduledJobs.length} job(s) exist for user ${userId}`);
+  } catch (error) {
+    console.error(`Failed to schedule workout reminder for user ${userId}:`, error);
+    throw error;
   }
+};
+const logNotificationFailure = async (failureData) => {
+  console.error('NOTIFICATION FAILURE:', failureData);
+  return true;
 };
 
 const deleteWorkoutReminder = catchAsync(async (req, res) => {
