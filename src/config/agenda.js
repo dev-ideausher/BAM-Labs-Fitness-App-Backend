@@ -16,7 +16,6 @@ const agenda = new Agenda({
   lockLimit: 0,
   defaultLockLimit: 0,
   defaultLockLifetime: 10 * 60 * 1000,
-  ensureIndex: true
 });
 
 agenda.on('ready', async () => {

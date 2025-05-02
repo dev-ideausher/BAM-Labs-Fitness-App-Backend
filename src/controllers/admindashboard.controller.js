@@ -2,6 +2,8 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 const {User, StrengthSession, CardioSession, StretchSession, Habit, UserHabit} = require('../models');
 const {UserHabitLog} = require('../models/userHabitLog.model');
+const Subscription = require('../models/subscription.model');
+const {getPaginateConfig} = require('../utils/queryPHandler');
 
 const getAgeGenderDistribution = catchAsync(async (req, res, next) => {
   const users = await User.find({
@@ -307,26 +309,64 @@ const getExerciseDistribution = catchAsync(async (req, res) => {
 });
 
 const getUserAnalytics = catchAsync(async (req, res) => {
+  const now = new Date();
   const activeUserIds = new Set();
   const [strengthUsers, cardioUsers, stretchUsers] = await Promise.all([
     StrengthSession.distinct('userId'),
     CardioSession.distinct('userId'),
     StretchSession.distinct('userId'),
   ]);
-
-  [...strengthUsers, ...cardioUsers, ...stretchUsers].forEach(userId => activeUserIds.add(userId));
-
+  [...strengthUsers, ...cardioUsers, ...stretchUsers].map(id => id.toString()).forEach(id => activeUserIds.add(id));
   const activeUsers = activeUserIds.size;
 
   const totalUsers = await User.countDocuments({});
-  const engagementRate = totalUsers > 0 ? ((activeUsers / totalUsers) * 100).toFixed(2) : 0;
+  const engagementRate = totalUsers ? ((activeUsers / totalUsers) * 100).toFixed(2) + '%' : '0%';
 
-  res.json({
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(startOfDay);
+  endOfDay.setDate(startOfDay.getDate() + 1);
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+
+  const sumBetween = async (startDate, endDate) => {
+    const agg = await Subscription.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lt: endDate,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: {$sum: '$amount'},
+        },
+      },
+    ]);
+    return agg.length ? agg[0].total : 0;
+  };
+
+  const [todaySales, monthSales, annualSales] = await Promise.all([
+    sumBetween(startOfDay, endOfDay),
+    sumBetween(startOfMonth, endOfMonth),
+    sumBetween(startOfYear, endOfYear),
+  ]);
+
+  res.status(200).json({
     status: true,
     data: {
       totalUsers,
       activeUsers,
-      engagementRate: `${engagementRate}%`,
+      engagementRate,
+      todaySales,
+      monthSales,
+      annualSales,
     },
     message: 'Overall user analytics',
   });
@@ -405,6 +445,98 @@ const getHabitAnalytics = catchAsync(async (req, res) => {
   });
 });
 
+const getSubscriptionStats = catchAsync(async (req, res) => {
+  const now = new Date();
+
+  const revenueAgg = await Subscription.aggregate([
+    {$match: {status: 'ACTIVE'}},
+    {
+      $group: {
+        _id: '$productId',
+        total: {$sum: '$amount'},
+      },
+    },
+  ]);
+
+  const revenueByPlan = {
+    monthly: 0,
+    annual: 0,
+    totalMonthlySubs: 0,
+    totalAnnualSubs: 0,
+  };
+
+  for (const {_id, total} of revenueAgg) {
+    if (_id === 'bamttclub_monthly_plan') revenueByPlan.monthly = total;
+    if (_id === 'bamttclub_annual_plan') revenueByPlan.annual = total;
+  }
+
+  const [monthlyUsers, annualUsers] = await Promise.all([
+    Subscription.countDocuments({
+      productId: 'bamttclub_monthly_plan',
+      status: 'ACTIVE',
+    }),
+    Subscription.countDocuments({
+      productId: 'bamttclub_annual_plan',
+      status: 'ACTIVE',
+    }),
+  ]);
+
+  const freeTrialUsers = await Subscription.countDocuments({
+    status: 'FREE_TRIAL',
+    endDate: {$gt: now},
+  });
+
+  const [totalMonthly, totalAnnual] = await Promise.all([
+    Subscription.countDocuments({productId: 'bamttclub_monthly_plan'}),
+    Subscription.countDocuments({productId: 'bamttclub_annual_plan'}),
+  ]);
+
+  revenueByPlan.totalMonthlySubs = totalMonthly;
+  revenueByPlan.totalAnnualSubs = totalAnnual;
+  const data = {
+    revenueByPlan,
+    monthlyUsers,
+    annualUsers,
+    freeTrialUsers,
+  };
+
+  res.status(200).json({
+    status: true,
+    message: 'Subscription stats fetched successfully',
+    data,
+  });
+});
+
+const getAllUserSubscriptions = catchAsync(async (req, res) => {
+  const {search, status, productId} = req.query;
+  const {filters, options} = getPaginateConfig(req.query);
+  options.populate = 'user::*';
+  options.project = {
+    purchaseToken: 0,
+  };
+  if (status) {
+    filters.status = status;
+  }
+
+  if (productId) {
+    filters.productId = productId;
+  }
+
+  if (search) {
+    filters.postPopulateFilters = {
+      $or: [{'user.name': {$regex: search, $options: 'i'}}, {'user.email': {$regex: search, $options: 'i'}}],
+    };
+  }
+
+  const subscriptions = await Subscription.paginate(filters, options);
+
+  res.status(200).json({
+    status: true,
+    message: 'User subscription details retrieved successfully',
+    data: subscriptions,
+  });
+});
+
 module.exports = {
   getAgeGenderDistribution,
   getSignupSummary,
@@ -412,4 +544,6 @@ module.exports = {
   getExerciseDistribution,
   getUserAnalytics,
   getHabitAnalytics,
+  getSubscriptionStats,
+  getAllUserSubscriptions,
 };

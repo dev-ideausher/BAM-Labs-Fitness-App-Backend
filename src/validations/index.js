@@ -6,3 +6,4 @@ exports.adminAuthValidation = require('./admin.auth.validation');
 exports.contactUsValidation = require('./contact.validation');
 exports.strengthContentValidation = require("./admin.tracker.validation");
 exports.notificationValidation = require('./notification.validation');
+exports.subscriptionValidation = require('./subscription.validation');
