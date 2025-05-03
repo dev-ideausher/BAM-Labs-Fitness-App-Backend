@@ -205,6 +205,7 @@ const checkAndRepairSchedules = async () => {
     console.log('Running schedule health check...');
 
     const users = await getUsersWithWorkoutReminders();
+    const now = new Date();
 
     for (const user of users) {
       const jobName = `workout-reminder-${user.id}`;
@@ -212,10 +213,19 @@ const checkAndRepairSchedules = async () => {
 
       if (scheduledJobs.length === 0) {
         console.warn(`Missing workout reminder job for user ${user.id}. Rescheduling...`);
+        await scheduleWorkoutReminder(new Date(user.reminderTime), user.timezoneOffset, user.id);
+        continue;
+      }
 
+      const job = scheduledJobs[0];
+      if (!job.attrs.nextRunAt || new Date(job.attrs.nextRunAt) < now) {
+        console.warn(`Stale job found for user ${user.id}. Rescheduling...`);
+        await agenda.cancel({name: jobName});
         await scheduleWorkoutReminder(new Date(user.reminderTime), user.timezoneOffset, user.id);
       } else {
-        console.log(`Workout reminder for user ${user.id} is healthy.`);
+        console.log(
+          `Workout reminder for user ${user.id} is healthy. Next run at: ${new Date(job.attrs.nextRunAt).toISOString()}`
+        );
       }
     }
 

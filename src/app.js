@@ -51,14 +51,14 @@ cron.schedule('0 * * * *', async () => {
   console.log('cron jon ends');
 });
 
-const scheduleHealthCheck = async () => {
-  const healthCheckJobName = 'workout-reminder-health-check';
-  agenda.define(healthCheckJobName, checkAndRepairSchedules);
-  await agenda.every('0 0 * * *', healthCheckJobName);
-};
+cron.schedule('0 0 * * *', async () => {
+  console.log('Running workout reminder health check cron job');
+  await checkAndRepairSchedules();
+  console.log('Workout reminder health check cron job completed');
+});
+
 const initializeReminderSystem = async () => {
   await agenda.start();
-  await scheduleHealthCheck();
   console.log('Reminder system initialized');
 };
 initializeReminderSystem();
