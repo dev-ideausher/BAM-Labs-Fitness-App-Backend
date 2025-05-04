@@ -45,7 +45,7 @@ app.options('*', cors());
 // Reroute all API request starting with "/v1" route
 app.use('/v1', routes);
 
-cron.schedule('0 * * * *', async () => {
+cron.schedule('0 0 * * *', async () => {
   console.log('Running cron job');
   await updateExpiredSubscriptions();
   console.log('cron jon ends');

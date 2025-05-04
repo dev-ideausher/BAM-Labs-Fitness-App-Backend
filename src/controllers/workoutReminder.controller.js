@@ -236,8 +236,10 @@ const checkAndRepairSchedules = async () => {
 };
 const getUsersWithWorkoutReminders = async () => {
   try {
-    const reminders = (await WorkoutReminder.find({ isEnabled: true }).populate('userId', 'id reminderTime offset')).lean();
-    return reminders.map(reminder => ({
+    const reminders = await WorkoutReminder.find({isEnabled: true}).populate('userId', 'id reminderTime offset');
+    const valid = reminders.filter(r => r.userId);
+
+    return valid.map(reminder => ({
       id: reminder.userId.id,
       reminderTime: reminder.reminderTime,
       timezoneOffset: reminder.offset,
