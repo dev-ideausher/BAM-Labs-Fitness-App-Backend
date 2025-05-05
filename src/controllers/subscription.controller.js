@@ -113,11 +113,14 @@ const verifySubscriptionController = async (req, res) => {
       throw new ApiError(400, 'Missing required fields: productId, purchaseToken, or transactionId.');
     }
 
-    const subscription = await subscriptionService.verifyAndCreateSubscription(userId, {
+    let subscription = await subscriptionService.verifyAndCreateSubscription(userId, {
       productId,
       purchaseToken,
       transactionId,
     });
+
+    subscription = await Subscription.findById(subscription._id).populate('user');
+
     return res.status(201).json({
       status: true,
       message: 'Subscription successfully verified and created.',
