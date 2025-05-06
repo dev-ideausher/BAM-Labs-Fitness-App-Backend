@@ -31,12 +31,12 @@ const getUserHabits = async (userId, query, populate) => {
 //   return await UserHabit.findByIdAndUpdate(userHabitId, habit, {new: true});
 // };
 const updateUserHabit = async (userHabitId, validHabit) => {
-  const doc = await UserHabit.findById(userHabitId);
-  if (!doc) {
+  const updated = await UserHabit.findByIdAndUpdate(userHabitId, validHabit, {new: true});
+  if (!updated) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User habit not found');
   }
-  Object.assign(doc, validHabit);
-  return await doc.save();
+
+  return updated;
 };
 
 const deleteUserHabit = async userHabitId => {

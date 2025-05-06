@@ -3,6 +3,7 @@ const {userHabitService, userHabitLogService} = require('../services');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const {Habit, UserHabit} = require('../models');
+const { cancelHabitNotifications, scheduleHabitNotifications } = require('../Jobs/habitNotifications');
 
 const validateHabitData = reqBody => {
   const {
@@ -179,20 +180,21 @@ const updateUserHabit = catchAsync(async (req, res) => {
     ...req.body,
     userId: req.user._id,
   });
-  const habit = await Habit.findById(req.body.habitId);
-  if (!habit) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Habit not found');
-  }
-  if (req.body.habitName) {
-    habit.name = req.body.habitName;
-    await habit.save();
-  }
-  const updatedHabit = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+  const updated = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+  await cancelHabitNotifications(updated._id);
 
-  res.status(200).json({
+  if (updated.notificationToggle) {
+    await updated.populate('habitId', 'name');
+
+    await scheduleHabitNotifications({
+      ...updated.toObject(),
+      habitName: updated.habitId.name,
+    });
+  }
+  res.status(httpStatus.OK).json({
     status: true,
     message: 'User habit updated successfully',
-    habit: updatedHabit,
+    habit: updated,
   });
 });
 
