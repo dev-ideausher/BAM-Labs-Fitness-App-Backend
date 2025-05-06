@@ -57,12 +57,6 @@ cron.schedule('0 0 * * *', async () => {
   console.log('Workout reminder health check cron job completed');
 });
 
-const initializeReminderSystem = async () => {
-  await agenda.start();
-  console.log('Reminder system initialized');
-};
-initializeReminderSystem();
-
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {
   next(new ApiError(httpStatus.NOT_FOUND, 'Not found'));

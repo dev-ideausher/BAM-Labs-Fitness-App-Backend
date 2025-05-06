@@ -27,8 +27,16 @@ const getUserHabits = async (userId, query, populate) => {
   return await getAllData(UserHabit, {userId, ...query}, populate);
 };
 
-const updateUserHabit = async (userHabitId, habit) => {
-  return await UserHabit.findByIdAndUpdate(userHabitId, habit, {new: true});
+// const updateUserHabit = async (userHabitId, habit) => {
+//   return await UserHabit.findByIdAndUpdate(userHabitId, habit, {new: true});
+// };
+const updateUserHabit = async (userHabitId, validHabit) => {
+  const doc = await UserHabit.findById(userHabitId);
+  if (!doc) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User habit not found');
+  }
+  Object.assign(doc, validHabit);
+  return await doc.save();
 };
 
 const deleteUserHabit = async userHabitId => {

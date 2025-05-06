@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const {userHabitService, userHabitLogService} = require('../services');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const {Habit,UserHabit} = require('../models');
+const {Habit, UserHabit} = require('../models');
 
 const validateHabitData = reqBody => {
   const {
@@ -107,11 +107,14 @@ const createUserHabit = catchAsync(async (req, res) => {
   const existingActiveHabit = await UserHabit.findOne({
     userId: req.user._id,
     habitId: req.body.habitId,
-    status: 'active'
+    status: 'active',
   });
 
   if (existingActiveHabit) {
-    throw new ApiError(httpStatus.BAD_REQUEST, 'A habit cycle for this habit already exists. Please complete or remove the existing entry before creating a new one.');
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      'A habit cycle for this habit already exists. Please complete or remove the existing entry before creating a new one.'
+    );
   }
   const validHabit = await validateHabitData({...req.body, userId: req.user._id});
   const habit = await userHabitService.createUserHabit(validHabit);
@@ -151,19 +154,41 @@ const getUserHabits = catchAsync(async (req, res) => {
   });
 });
 
+// const updateUserHabit = catchAsync(async (req, res) => {
+//   const validHabit = await validateHabitData(req.body);
+
+//   const habit = await Habit.findById(req.body.habitId);
+//   if (!habit) {
+//     throw new ApiError(httpStatus.NOT_FOUND, 'Habit not found');
+//   }
+//   if (req.body.habitName) {
+//     await Habit.findByIdAndUpdate(req.body.habitId, { name: req.body.habitName });
+//   }
+
+//   const updatedHabit = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+
+//   res.status(200).json({
+//     status: true,
+//     message: 'User habit updated successfully',
+//     habit: updatedHabit,
+//   });
+// });
+
 const updateUserHabit = catchAsync(async (req, res) => {
-  const validHabit = await validateHabitData(req.body);
-  
+  const validHabit = await validateHabitData({
+    ...req.body,
+    userId: req.user._id,
+  });
   const habit = await Habit.findById(req.body.habitId);
   if (!habit) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Habit not found');
   }
   if (req.body.habitName) {
-    await Habit.findByIdAndUpdate(req.body.habitId, { name: req.body.habitName });
+    habit.name = req.body.habitName;
+    await habit.save();
   }
-
   const updatedHabit = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
-  
+
   res.status(200).json({
     status: true,
     message: 'User habit updated successfully',
@@ -180,23 +205,23 @@ const deleteUserHabit = catchAsync(async (req, res) => {
 });
 
 const restoreHabitStreak = catchAsync(async (req, res) => {
-  const { userHabitId } = req.params;
+  const {userHabitId} = req.params;
   const restoredStreak = await userHabitService.restoreHabitStreak(userHabitId, req.user._id);
-  
+
   res.status(200).json({
     status: true,
     message: 'Habit streak restored successfully',
-    data: restoredStreak
+    data: restoredStreak,
   });
 });
 
 const getHabitStats = catchAsync(async (req, res) => {
   const stats = await userHabitService.getHabitStatistics(req.user._id);
-  
+
   res.status(200).json({
     status: true,
     message: 'Habit statistics retrieved successfully',
-    stats
+    stats,
   });
 });
 
