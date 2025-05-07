@@ -85,7 +85,8 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   const jobHandler = async job => {
     const {userId} = job.attrs.data;
     try {
-      console.log(`Executing workout reminder for user ${userId} at ${new Date().toISOString()}`);
+      console.log(`Executing workout reminder for user ${userId}`);
+
       const notificationResult = await sendToTopic(
         userId,
         `user_${userId}`,
@@ -112,8 +113,6 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
         throw new Error('No response received from sendToTopic');
       }
     } catch (error) {
-      console.error(`Error sending workout reminder for user ${userId}:`, error.message);
-
       job.attrs.failCount = (job.attrs.failCount || 0) + 1;
 
       const maxRetries = 3;
@@ -152,11 +151,8 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
   };
 
   try {
-    const existingJobs = await agenda.jobs({name: jobName});
-    if (existingJobs.length > 0) {
-      await agenda.cancel({name: jobName});
-      console.log(`Canceled existing reminder job for user ${userId}`);
-    }
+    await agenda.cancel({name: jobName});
+    console.log(`Canceled any existing reminder job for user ${userId}`);
 
     const definitions = agenda._definitions;
     const isJobDefined = definitions[jobName] !== undefined;
@@ -166,16 +162,7 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
       console.log(`Defined new job handler for ${jobName}`);
     }
 
-    await agenda.every(
-      cronTime,
-      jobName,
-      {userId},
-      {
-        timezone: 'UTC',
-        lockLifetime: 10 * 60 * 1000,
-      }
-    );
-
+    await agenda.every(cronTime, jobName, {userId}, {timezone: 'UTC'});
     console.log(
       `Successfully scheduled daily workout reminder for user ${userId} at ${hour}:${minute} UTC (Cron: ${cronTime})`
     );
@@ -184,20 +171,16 @@ const scheduleWorkoutReminder = async (reminderTime, offset, userId) => {
     if (scheduledJobs.length === 0) {
       throw new Error(`Failed to schedule workout reminder for user ${userId}`);
     }
-
-    const job = scheduledJobs[0];
-    console.log(`Verified job exists for user ${userId}. Next run at: ${job.attrs.nextRunAt}`);
-
-    if (!agenda._isRunning) {
-      console.warn('Agenda is not running! Starting agenda...');
-      await agenda.start();
-    }
-
-    return true;
+    console.log(`Verified ${scheduledJobs.length} job(s) exist for user ${userId}`);
   } catch (error) {
     console.error(`Failed to schedule workout reminder for user ${userId}:`, error);
     throw error;
   }
+};
+
+const logNotificationFailure = async failureData => {
+  console.error('NOTIFICATION FAILURE:', failureData);
+  return true;
 };
 
 const checkAndRepairSchedules = async () => {

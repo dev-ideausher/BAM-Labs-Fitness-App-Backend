@@ -227,15 +227,36 @@ const getSubscriptionDetailsTest = async subscriptionId => {
   }
 };
 
-const getMyUserSubscriptions = (user, filters, options) => {
-  return Subscription.paginate(
+async function getMyUserSubscriptions(user, filters, options) {
+  const page = await Subscription.paginate(
     {...filters, user: user._id},
     {
       ...options,
       populate: ['user::*'],
+      lean: true,
     }
   );
-};
+
+  const now = new Date();
+  const todayMidnightUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+  page.results = page.results.map(sub => {
+    const start = new Date(sub.startDate);
+
+    const trialEnd = new Date(start);
+    trialEnd.setUTCDate(trialEnd.getUTCDate() + (sub.freeTrialDays || 21));
+
+    const trialEndMidnightUtc = Date.UTC(trialEnd.getUTCFullYear(), trialEnd.getUTCMonth(), trialEnd.getUTCDate());
+
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const diffDays = Math.ceil((trialEndMidnightUtc - todayMidnightUtc) / MS_PER_DAY);
+
+    sub.remainingFreeTrialDays = diffDays > 0 ? diffDays : 0;
+    return sub;
+  });
+
+  return page;
+}
 
 module.exports = {
   subscribeVerifyPlan,
