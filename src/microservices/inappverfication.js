@@ -4,9 +4,9 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
-const APPLE_KEY_ID = 'W286GHP4KQ';
-const APPLE_ISSUER_ID = '27e795c5-164b-43ad-b588-ebf3ce618600';
-const APPLE_BUNDLE_ID = 'com.iu.albconnectBusiness';
+const APPLE_KEY_ID = '8SQN4UZ6YY';
+const APPLE_ISSUER_ID = 'bbdea024-5342-4904-9a8a-69fc8400de67';
+const APPLE_BUNDLE_ID = 'com.iu.bamFitnessApp';
 const APPLE_PRODUCTION_URL = 'https://api.storekit.itunes.apple.com/inApps/v1';
 const APPLE_SANDBOX_URL = 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1';
 const APPLE_LOOKUP_URL = 'https://api.appstoreconnect.apple.com/v1';
