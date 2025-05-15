@@ -4,7 +4,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 
-const APPLE_KEY_ID = '8SQN4UZ6YY';
+const APPLE_KEY_ID = 'D5J57TZUP9';
 const APPLE_ISSUER_ID = 'bbdea024-5342-4904-9a8a-69fc8400de67';
 const APPLE_BUNDLE_ID = 'com.iu.bamFitnessApp';
 const APPLE_PRODUCTION_URL = 'https://api.storekit.itunes.apple.com/inApps/v1';
