@@ -65,7 +65,7 @@ const verifyAppleTransaction = async (req, res) => {
   }
 
   try {
-    const PRODUCT_ID = 'albconnect_premium_ios';
+    const PRODUCT_ID = 'bamttclub_monthly_plan';
     const result = await verifyTransactionWithApple(TRANSACTION_ID);
 
     if (result.success) {
