@@ -3,6 +3,10 @@ const {google} = require('googleapis');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
+const Subscription = require('../models/subscription.model');
+const {User} = require('../models/user.model');
+const ApiError = require('../utils/ApiError');
+const catchAsync = require('../utils/catchAsync');
 
 const APPLE_KEY_ID = 'D5J57TZUP9';
 const APPLE_ISSUER_ID = 'bbdea024-5342-4904-9a8a-69fc8400de67';
@@ -581,6 +585,169 @@ const verifyJWSTransaction = async jws => {
   }
 };
 
+const isAppleSubscription = subscription => {
+  if (!subscription) return false;
+  const isNumericId = /^\d+$/.test(subscription.transactionId);
+  const tokenMatchesId = subscription.transactionId === subscription.purchaseToken;
+
+  const isGoogleTransactionId = subscription.transactionId?.startsWith('GPA.');
+
+  const isGooglePurchaseToken = subscription.purchaseToken?.length > 50 && subscription.purchaseToken?.includes('.');
+
+  if (isGoogleTransactionId || isGooglePurchaseToken) {
+    return false;
+  }
+
+  if (isNumericId && tokenMatchesId) {
+    return true;
+  }
+
+  return isNumericId && subscription.transactionId.length < 20;
+};
+
+const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+
+  try {
+    const latestSubscription = await Subscription.findOne({user: userId}, {}, {sort: {createdAt: -1}});
+    console.log(latestSubscription, 'latestSubscription');
+    if (!latestSubscription) {
+      return res.status(404).json({
+        status: false,
+        message: 'No subscription found for this user',
+      });
+    }
+
+    const userObject = await User.findById(userId);
+    if (!userObject) {
+      throw new ApiError(404, 'User not found');
+    }
+
+    const isApplePurchase = isAppleSubscription(latestSubscription);
+
+    let liveStatus;
+
+    if (isApplePurchase) {
+      const result = await verifyTransactionWithApple(latestSubscription.transactionId);
+
+      if (!result.success) {
+        throw new ApiError(500, `Failed to verify with Apple: ${result.error}`);
+      }
+
+      const transaction = result.data[0];
+      liveStatus = {
+        platform: 'ios',
+        productId: transaction.productId || latestSubscription.productId,
+        transactionId: transaction.transactionId,
+        orderId: transaction.orderId,
+        status: mapAppleStatusToOurStatus(transaction.status),
+        startDate: new Date(transaction.purchaseDate),
+        endDate: transaction.expiresDate ? new Date(transaction.expiresDate) : null,
+        isActive: ['ACTIVE', 'PURCHASED', 'PURCHASED_NON_CONSUMABLE'].includes(transaction.status),
+        amount: transaction.amount || latestSubscription.amount,
+        currency: transaction.currency || latestSubscription.currency,
+      };
+    } else {
+      const androidPublisher = await initializeGoogleAuth();
+
+      const result = await verifyPurchase(
+        androidPublisher,
+        'com.iu.bamFitnessApp',
+        latestSubscription.productId,
+        latestSubscription.purchaseToken
+      );
+
+      if (!result.success) {
+        throw new ApiError(500, `Failed to verify with Google Play: ${result.error}`);
+      }
+
+      const subscription = result.data;
+      liveStatus = {
+        platform: 'android',
+        productId: subscription.productId,
+        purchaseToken: latestSubscription.purchaseToken,
+        orderId: subscription.orderId,
+        status: mapGoogleStatusToOurStatus(subscription.subscriptionStatus),
+        startDate: new Date(subscription.startTime),
+        endDate: new Date(subscription.expiryTime),
+        isActive: subscription.subscriptionStatus === 'ACTIVE',
+        autoRenewing: subscription.autoRenewing,
+        amount: subscription.amount || latestSubscription.amount,
+        currency: subscription.currency || latestSubscription.currency,
+      };
+    }
+
+    const mappedStatus = liveStatus.status;
+
+    const isDatabaseOutdated = latestSubscription.status !== mappedStatus;
+    if (isDatabaseOutdated) {
+      latestSubscription.status = mappedStatus;
+      latestSubscription.endDate = liveStatus.endDate || latestSubscription.endDate;
+      if (liveStatus.autoRenewing !== undefined) {
+        latestSubscription.autoRenewing = liveStatus.autoRenewing;
+      }
+      await latestSubscription.save();
+
+      liveStatus.databaseUpdated = true;
+    }
+
+    liveStatus.subscriptionId = latestSubscription._id;
+    liveStatus.dbStatus = latestSubscription.status;
+
+    liveStatus.user = userObject;
+
+    return res.status(200).json({
+      status: true,
+      message: 'Current subscription status retrieved successfully',
+      databaseUpdated: isDatabaseOutdated,
+      data: liveStatus,
+    });
+  } catch (error) {
+    console.error('Error in getCurrentSubscriptionStatus:', error);
+    throw new ApiError(error.statusCode || 500, error.message || 'Failed to get current subscription status');
+  }
+});
+
+const mapAppleStatusToOurStatus = appleStatus => {
+  if (!appleStatus) return 'EXPIRED';
+
+  switch (appleStatus) {
+    case 'ACTIVE':
+    case 'PURCHASED':
+    case 'PURCHASED_NON_CONSUMABLE':
+      return 'ACTIVE';
+    case 'FREE_TRIAL':
+      return 'FREE_TRIAL';
+    case 'EXPIRED':
+    case 'EXPIRED_NON_RENEWING':
+      return 'EXPIRED';
+    case 'CANCELED_BY_USER':
+    case 'CANCELED_BY_SYSTEM':
+    case 'REVOKED':
+      return 'CANCELLED';
+    default:
+      return 'EXPIRED';
+  }
+};
+
+const mapGoogleStatusToOurStatus = googleStatus => {
+  if (!googleStatus) return 'EXPIRED';
+
+  switch (googleStatus) {
+    case 'ACTIVE':
+      return 'ACTIVE';
+    case 'FREE_TRIAL':
+      return 'FREE_TRIAL';
+    case 'EXPIRED':
+      return 'EXPIRED';
+    case 'CANCELED_BY_USER':
+    case 'CANCELED_BY_SYSTEM':
+      return 'CANCELLED';
+    default:
+      return 'EXPIRED';
+  }
+};
+
 module.exports = {
   initializeGoogleAuth,
   verifyPurchase,
@@ -588,4 +755,5 @@ module.exports = {
   verifyTransactionWithApple,
   verifyJWSTransaction,
   getProductPrice,
+  getCurrentSubscriptionStatus,
 };

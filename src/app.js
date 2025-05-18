@@ -16,6 +16,7 @@ require('./Jobs/sendNotification')(agenda);
 require('./Jobs/emailNotification')(agenda);
 const {updateExpiredSubscriptions} = require('./services/subscription.service');
 const {checkAndRepairSchedules} = require('./controllers/workoutReminder.controller');
+// const {checkAndRepairHabitSchedules} = require('./Jobs/habitNotifications');
 
 const app = express();
 
@@ -56,6 +57,12 @@ cron.schedule('0 0 * * *', async () => {
   await checkAndRepairSchedules();
   console.log('Workout reminder health check cron job completed');
 });
+
+// cron.schedule('* * * * *', async () => {
+//   console.log('Running habit notification health check cron job');
+//   await checkAndRepairHabitSchedules();
+//   console.log('Habit notification health check cron job completed');
+// })
 
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {
