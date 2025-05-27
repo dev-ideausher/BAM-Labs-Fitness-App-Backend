@@ -622,7 +622,7 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
     }
 
     const userObject = await User.findById(userId);
-    
+
     if (!userObject) {
       throw new ApiError(404, 'User not found');
     }
@@ -680,6 +680,21 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
         currency: subscription.currency || latestSubscription.currency,
       };
     }
+
+    const now = new Date();
+    const todayMidnightUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+    const start = new Date(latestSubscription.startDate);
+
+    const trialEnd = new Date(start);
+    trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 21));
+
+    const trialEndMidnightUtc = Date.UTC(trialEnd.getUTCFullYear(), trialEnd.getUTCMonth(), trialEnd.getUTCDate());
+
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const diffDays = Math.ceil((trialEndMidnightUtc - todayMidnightUtc) / MS_PER_DAY);
+
+    liveStatus.remainingFreeTrialDays = diffDays > 0 ? diffDays : 0;
 
     const mappedStatus = liveStatus.status;
 
