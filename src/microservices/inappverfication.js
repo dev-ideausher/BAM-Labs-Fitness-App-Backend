@@ -710,7 +710,7 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
       liveStatus.databaseUpdated = true;
     }
 
-    liveStatus.subscriptionId = latestSubscription._id;
+    liveStatus._id = latestSubscription._id;
     liveStatus.dbStatus = latestSubscription.status;
 
     liveStatus.user = userObject;
