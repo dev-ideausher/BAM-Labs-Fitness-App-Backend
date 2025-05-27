@@ -619,6 +619,7 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
     }
 
     const userObject = await User.findById(userId);
+    
     if (!userObject) {
       throw new ApiError(404, 'User not found');
     }
