@@ -143,6 +143,15 @@ const updateExpiredSubscriptions = async () => {
 
 const getSubscriptionDetailsTest = async subscriptionId => {
   try {
+    if (!subscriptionId) {
+      const allSubscriptions = await SubscriptionDetails.find({});
+      return {
+        success: true,
+        data: allSubscriptions,
+        updated: false,
+      };
+    }
+
     const androidPublisher = await initializeGoogleAuth();
     const packageName = 'com.iu.bam_fitness_app';
 
