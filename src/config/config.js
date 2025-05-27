@@ -6,6 +6,17 @@ const { OpenAI } = require('openai');
 
 dotenv.config({path: path.join(__dirname, '../../.env')});
 
+const parseKey = (key) => {
+  if (!key) return key;
+  let cleanKey = key.replace(/^["']|["']$/g, '');
+  cleanKey = cleanKey.replace(/\\n/g, '\n');
+  if (!cleanKey.includes('-----BEGIN PRIVATE KEY-----')) {
+    console.warn('Private key does not appear to be properly formatted');
+  }
+
+  return cleanKey;
+};
+
 // schema of env files for validation
 const envVarsSchema = Joi.object()
   .keys({
@@ -40,7 +51,18 @@ const envVarsSchema = Joi.object()
     SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL: Joi.string().required(),
     SERVICE_ACCOUNT_CLIENT_X509_CERT_URL: Joi.string().required(),
     SERVICE_ACCOUNT_UNIVERSE_DOMAIN: Joi.string().required(),
-    
+  OTHER_SERVICE_ACCOUNT_TYPE: Joi.string().required(),
+  OTHER_SERVICE_ACCOUNT_PROJECT_ID: Joi.string().required(),
+  OTHER_SERVICE_ACCOUNT_PRIVATE_KEY_ID: Joi.string().required(),
+  OTHER_SERVICE_ACCOUNT_PRIVATE_KEY: Joi.string().required(),
+  OTHER_SERVICE_ACCOUNT_CLIENT_EMAIL: Joi.string().email().required(),
+  OTHER_SERVICE_ACCOUNT_CLIENT_ID: Joi.string().required(),
+  OTHER_SERVICE_ACCOUNT_AUTH_URI: Joi.string().uri().required(),
+  OTHER_SERVICE_ACCOUNT_TOKEN_URI: Joi.string().uri().required(),
+  OTHER_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL: Joi.string().uri().required(),
+  OTHER_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL: Joi.string().uri().required(),
+  OTHER_SERVICE_ACCOUNT_UNIVERSE_DOMAIN: Joi.string().required(),
+
   RESEND_API_KEY: Joi.string().required(),
   RESEND_FROM_EMAIL: Joi.string().email().required(),
   OPENAI_API_KEY: Joi.string().required(),
@@ -67,6 +89,19 @@ module.exports = {
     sid: envVars.TWILIO_SID,
     phone: envVars.TWILIO_PHONE,
     authToken: envVars.TWILIO_AUTH_TOKEN,
+  },
+  otherServiceAccount: {
+    type: envVars.OTHER_SERVICE_ACCOUNT_TYPE,
+    project_id: envVars.OTHER_SERVICE_ACCOUNT_PROJECT_ID,
+    private_key_id: envVars.OTHER_SERVICE_ACCOUNT_PRIVATE_KEY_ID,
+    private_key: parseKey(envVars.OTHER_SERVICE_ACCOUNT_PRIVATE_KEY),
+    client_email: envVars.OTHER_SERVICE_ACCOUNT_CLIENT_EMAIL,
+    client_id: envVars.OTHER_SERVICE_ACCOUNT_CLIENT_ID,
+    auth_uri: envVars.OTHER_SERVICE_ACCOUNT_AUTH_URI,
+    token_uri: envVars.OTHER_SERVICE_ACCOUNT_TOKEN_URI,
+    auth_provider_x509_cert_url: envVars.OTHER_SERVICE_ACCOUNT_AUTH_PROVIDER_X509_CERT_URL,
+    client_x509_cert_url: envVars.OTHER_SERVICE_ACCOUNT_CLIENT_X509_CERT_URL,
+    universe_domain: envVars.OTHER_SERVICE_ACCOUNT_UNIVERSE_DOMAIN,
   },
   aws: {
     s3: {

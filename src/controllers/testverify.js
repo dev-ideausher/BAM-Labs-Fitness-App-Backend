@@ -27,6 +27,7 @@ const verifyPurchaseTest = async (purchaseToken, productId) => {
       message: error.message,
       stack: error.stack,
     });
+    return { success: false, error: error.message };
   }
 };
 

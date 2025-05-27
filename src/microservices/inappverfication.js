@@ -7,6 +7,7 @@ const Subscription = require('../models/subscription.model');
 const {User} = require('../models/user.model');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
+const config = require('../config/config');
 
 const APPLE_KEY_ID = 'D5J57TZUP9';
 const APPLE_ISSUER_ID = 'bbdea024-5342-4904-9a8a-69fc8400de67';
@@ -17,13 +18,15 @@ const APPLE_LOOKUP_URL = 'https://api.appstoreconnect.apple.com/v1';
 
 const initializeGoogleAuth = async () => {
   try {
+
+    const serviceAccountToUse = config.serviceAccount;
     const auth = new google.auth.GoogleAuth({
-      keyFile: path.join(__dirname, '../../service.json'),
+      credentials: serviceAccountToUse,
       scopes: ['https://www.googleapis.com/auth/androidpublisher'],
     });
 
     const authClient = await auth.getClient();
-    // console.log("Google Auth initialized successfully.");
+    // console.log('Google Auth initialized successfully.');
     return google.androidpublisher({
       version: 'v3',
       auth: authClient,
