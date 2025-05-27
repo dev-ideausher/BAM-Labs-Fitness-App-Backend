@@ -652,7 +652,7 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
 
       const result = await verifyPurchase(
         androidPublisher,
-        'com.iu.bamFitnessApp',
+        'com.iu.bam_fitness_app',
         latestSubscription.productId,
         latestSubscription.purchaseToken
       );

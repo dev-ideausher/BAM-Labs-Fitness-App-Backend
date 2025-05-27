@@ -57,6 +57,8 @@ const getMyUserSubscriptions = catchAsync(async (req, res) => {
   });
 });
 
+const ALLOWED_PRODUCT_IDS = ['bamttclub_monthly_plan', 'bamttclub_annual_plan'];
+
 const verifyAppleTransaction = async (req, res) => {
   const {TRANSACTION_ID} = req.body;
 
@@ -65,39 +67,45 @@ const verifyAppleTransaction = async (req, res) => {
   }
 
   try {
-    const PRODUCT_ID = 'bamttclub_monthly_plan';
     const result = await verifyTransactionWithApple(TRANSACTION_ID);
 
-    if (result.success) {
-      const purchase = result.data[0];
-      console.log('Verification successful!');
-
-      const newSubscription = new Subscription({
-        user: req.user._id,
-        productId: PRODUCT_ID,
-        purchaseToken: purchase.transactionId,
-        orderId: purchase.orderId,
-        amount: purchase.amount,
-        currency: purchase.currency,
-        transactionId: purchase.transactionId,
-        startDate: new Date(purchase.purchaseDate),
-        endDate: new Date(purchase.expiresDate),
-        status: purchase.status,
-        autoRenewing: purchase.autoRenewing || false,
-      });
-
-      await newSubscription.save();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Transaction verified successfully',
-        data: purchase,
-      });
-    } else {
+    if (!result.success) {
       console.error('Verification failed:', result.error);
-
-      return res.status(500).json({success: false, message: result.error});
+      return res.status(400).json({success: false, message: result.error});
     }
+
+    const purchase = result.data[0];
+    console.log('Verification successful!');
+
+    const PRODUCT_ID = purchase.productId;
+    if (!ALLOWED_PRODUCT_IDS.includes(PRODUCT_ID)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid productId: ${PRODUCT_ID}`,
+      });
+    }
+
+    const newSubscription = new Subscription({
+      user: req.user._id,
+      productId: PRODUCT_ID,
+      purchaseToken: purchase.transactionId,
+      orderId: purchase.orderId,
+      amount: purchase.amount,
+      currency: purchase.currency,
+      transactionId: purchase.transactionId,
+      startDate: new Date(purchase.purchaseDate),
+      endDate: new Date(purchase.expiresDate),
+      status: purchase.status,
+      autoRenewing: purchase.autoRenewing || false,
+    });
+
+    await newSubscription.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Transaction verified successfully',
+      data: purchase,
+    });
   } catch (error) {
     console.error('Error during transaction verification:', error.message);
     return res.status(500).json({success: false, message: error.message});
