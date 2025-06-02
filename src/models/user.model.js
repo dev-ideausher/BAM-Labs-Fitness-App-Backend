@@ -44,12 +44,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       default: null,
       unique: true,
+      sparse: true,
     },
     email: {
       type: String,
       trim: true,
-      required: true,
+      // required: true,
       unique: true,
+      sparse: true,
     },
     profilePic: {
       type: {
@@ -101,18 +103,53 @@ const userSchema = new mongoose.Schema(
   {timestamps: true}
 );
 
-userSchema.index({ email: 1, isDeleted: 1 });
-userSchema.index({ phone: 1, isDeleted: 1 });
+// userSchema.index({ email: 1, isDeleted: 1 });
+// userSchema.index({ phone: 1, isDeleted: 1 });
+
+// userSchema.pre('save', async function (next) {
+//   try {
+//     if (this.isModified('email') || this.isModified('phone')) {
+//       const existingUser = await this.constructor.findOne({
+//         $or: [
+//           { email: this.email, isDeleted: false },
+//           { phone: this.phone, isDeleted: false }
+//         ],
+//         _id: { $ne: this._id }
+//       });
+
+//       if (existingUser) {
+//         const error = new Error('Email or phone already in use');
+//         error.statusCode = 409;
+//         return next(error);
+//       }
+//     }
+//     next();
+//   } catch (error) {
+//     next(error);
+//   }
+// });
 
 userSchema.pre('save', async function (next) {
   try {
-    if (this.isModified('email') || this.isModified('phone')) {
+    if (this._bypassDupCheck) {
+      return next();
+    }
+
+    const checkEmail = this.isModified('email') && !!this.email;
+    const checkPhone = this.isModified('phone') && !!this.phone;
+
+    if (checkEmail || checkPhone) {
+      const queryConditions = [];
+      if (this.email) {
+        queryConditions.push({ email: this.email, isDeleted: false });
+      }
+      if (this.phone) {
+        queryConditions.push({ phone: this.phone, isDeleted: false });
+      }
+
       const existingUser = await this.constructor.findOne({
-        $or: [
-          { email: this.email, isDeleted: false },
-          { phone: this.phone, isDeleted: false }
-        ],
-        _id: { $ne: this._id }
+        $or: queryConditions,
+        _id: { $ne: this._id },
       });
 
       if (existingUser) {
@@ -121,47 +158,12 @@ userSchema.pre('save', async function (next) {
         return next(error);
       }
     }
+
     next();
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 });
-
-// userSchema.pre('save', function(next) {
-//   if (this.weight && this.height) {
-//     const heightInMeters = this.height / 100;
-//     this.bmi = this.weight / heightInMeters ** 2;
-//   } else {
-//     this.bmi = null;
-//   }
-//   if (this.dob) {
-//     const currentDate = new Date();
-//     const birthDate = new Date(this.dob);
-//     this.age = currentDate.getFullYear() - birthDate.getFullYear();
-//     const monthDifference = currentDate.getMonth() - birthDate.getMonth();
-//     if (monthDifference < 0 || (monthDifference === 0 && currentDate.getDate() < birthDate.getDate())) {
-//       this.age--;
-//     }
-//   } else {
-//     this.age = null;
-//   }
-
-//   if (this.gender && this.bmi && this.age) {
-//     if (this.gender === 'male') {
-//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 16.2;
-//     } else if (this.gender === 'female') {
-//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 5.4;
-//     } else if (this.gender === 'other') {
-//       this.bodyFat = 1.2 * this.bmi + 0.23 * this.age - 10.8;
-//     } else {
-//       this.bodyFat = null;
-//     }
-//   } else {
-//     this.bodyFat = null;
-//   }
-
-//   next();
-// });
 
 userSchema.plugin(paginate);
 

@@ -1,6 +1,7 @@
 const {User} = require('../models');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
+const admin = require('firebase-admin');
 
 const userValidator = user => {
   if (!user) {
@@ -34,7 +35,7 @@ async function updateUserById(id, newDetails) {
   user.gender = newDetails?.gender ? newDetails.gender : user.gender;
   user.weight = newDetails?.weight ? newDetails.weight : user.weight;
   user.height = newDetails?.height ? newDetails.height : user.height;
-  user.bmi     = newDetails?.bmi !== undefined     ? newDetails.bmi     : user.bmi;
+  user.bmi = newDetails?.bmi !== undefined ? newDetails.bmi : user.bmi;
   user.bodyFat = newDetails?.bodyFat !== undefined ? newDetails.bodyFat : user.bodyFat;
   if (newDetails?.age !== undefined) {
     const currentAge = user.age;
@@ -93,14 +94,42 @@ function recalculateMetrics(user) {
   }
 }
 
-async function deleteUserById(id) {
+const deleteUserById = async id => {
   try {
-    await User.findByIdAndDelete(id);
-    return true;
+    const user = await User.findById(id);
+    if (!user) {
+      return {
+        success: false,
+        message: 'User not found',
+      };
+    }
+    const firebaseUid = user.firebaseUid;
+    let firebaseDeleted = false;
+    try {
+      await admin.auth().deleteUser(firebaseUid);
+      firebaseDeleted = true;
+      console.log(`[deleteUserById] Firebase user deleted: ${firebaseUid}`);
+    } catch (firebaseErr) {
+      console.error(`[deleteUserById] Failed to delete user (${firebaseUid}) from Firebase:`, firebaseErr);
+    }
+
+    const deletedDoc = await User.findByIdAndDelete(id);
+    if (!deletedDoc) {
+      return {
+        success: false,
+        message: 'Failed to delete user from database',
+      };
+    }
+    return {
+      success: true,
+      message: `User successfully deleted${firebaseDeleted ? ' from Firebase and' : ''} MongoDB`,
+      data: deletedDoc.toObject(),
+    };
   } catch (err) {
+    console.error(`[deleteUserById] Unexpected error:`, err);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to delete the user');
   }
-}
+};
 
 async function updatePreferencesById(id, newPrefs) {
   const user = await User.findById(id);
