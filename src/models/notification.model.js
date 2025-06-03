@@ -39,7 +39,12 @@ const notificationSchema = new mongoose.Schema({
   schedule: {
     type: Date,
     required: true
-  }
+  },
+   offset: {
+      type: Number,
+      required: true,
+    }
+
 }, {timestamps: true});
 
 notificationSchema.plugin(paginate);

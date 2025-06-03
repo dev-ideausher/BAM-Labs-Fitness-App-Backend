@@ -4,6 +4,7 @@ const {User, StrengthSession, CardioSession, StretchSession, Habit, UserHabit} =
 const {UserHabitLog} = require('../models/userHabitLog.model');
 const Subscription = require('../models/subscription.model');
 const {getPaginateConfig} = require('../utils/queryPHandler');
+const axios = require('axios');
 
 const getAgeGenderDistribution = catchAsync(async (req, res, next) => {
   const users = await User.find({
@@ -182,21 +183,21 @@ const getTimeAnalytics = catchAsync(async (req, res) => {
   const {interval} = req.query;
 
   if (!['weekly', 'monthly', 'yearly'].includes(interval)) {
-    throw new ApiError(400, "Invalid interval specified. Use 'weekly', 'monthly', or 'yearly'.");
+    throw new ApiError(400, "Invalid interval. Use 'weekly', 'monthly', or 'yearly'.");
   }
 
-  const currentDate = new Date();
+  const now = new Date();
   let startDate, groupBy, dateFormat;
 
   switch (interval) {
     case 'weekly':
-      startDate = new Date(currentDate.setDate(currentDate.getDate() - 7));
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
       groupBy = {$dayOfWeek: '$dateTime'};
       dateFormat = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       break;
 
     case 'monthly':
-      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       groupBy = {
         $switch: {
           branches: [
@@ -231,22 +232,43 @@ const getTimeAnalytics = catchAsync(async (req, res) => {
       break;
 
     case 'yearly':
-      startDate = new Date(currentDate.getFullYear(), 0, 1);
+      startDate = new Date(now.getFullYear(), 0, 1);
       groupBy = {$month: '$dateTime'};
       dateFormat = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       break;
   }
 
-  const strengthTime = await StrengthSession.aggregate([
+  const avgResult = await StrengthSession.aggregate([
+    {$match: {sessionTime: {$exists: true, $ne: null}}},
+    {
+      $group: {
+        _id: null,
+        avgTime: {$avg: '$sessionTime'},
+      },
+    },
+  ]);
+
+  const DEFAULT_STRENGTH_MIN = 30;
+  const averageStrengthTime = avgResult.length && avgResult[0].avgTime ? avgResult[0].avgTime : DEFAULT_STRENGTH_MIN;
+
+  const DEFAULT_CARDIO_MINUTES = 20;
+  const DEFAULT_STRETCH_MINUTES = 15;
+
+  const strengthAgg = await StrengthSession.aggregate([
+    {
+      $addFields: {
+        sessionTime: {$ifNull: ['$sessionTime', averageStrengthTime]},
+      },
+    },
     {
       $match: {
-        dateTime: {$gte: startDate},
+        dateTime: {$gte: startDate, $lte: now},
       },
     },
     {
       $group: {
         _id: groupBy,
-        totalTime: {$sum: '$sessionTime'},
+        totalMinutes: {$sum: '$sessionTime'},
       },
     },
     {
@@ -254,18 +276,78 @@ const getTimeAnalytics = catchAsync(async (req, res) => {
     },
   ]);
 
-  const formattedSummary = dateFormat.map((label, index) => {
-    let strengthData;
+  const cardioAgg = await CardioSession.aggregate([
+    {
+      $match: {
+        dateTime: {$gte: startDate, $lte: now},
+      },
+    },
+    {
+      $group: {
+        _id: groupBy,
+        count: {$sum: 1},
+      },
+    },
+    {
+      $sort: {_id: 1},
+    },
+  ]);
 
+  const stretchAgg = await StretchSession.aggregate([
+    {
+      $match: {
+        dateTime: {$gte: startDate, $lte: now},
+      },
+    },
+    {
+      $group: {
+        _id: groupBy,
+        count: {$sum: 1},
+      },
+    },
+    {
+      $sort: {_id: 1},
+    },
+  ]);
+
+  const strengthMap = new Map();
+  for (const doc of strengthAgg) {
+    strengthMap.set(doc._id, doc.totalMinutes);
+  }
+
+  const cardioMap = new Map();
+  for (const doc of cardioAgg) {
+    cardioMap.set(doc._id, doc.count);
+  }
+
+  const stretchMap = new Map();
+  for (const doc of stretchAgg) {
+    stretchMap.set(doc._id, doc.count);
+  }
+
+  const formattedSummary = dateFormat.map((label, idx) => {
+    let groupKey;
     if (interval === 'weekly' || interval === 'yearly') {
-      strengthData = strengthTime.find(item => item._id === index + 1);
+      groupKey = idx + 1;
     } else {
-      strengthData = strengthTime.find(item => item._id === label);
+      groupKey = label;
     }
+
+    const strengthMinutes = strengthMap.get(groupKey) || 0;
+
+    const cardioCount = cardioMap.get(groupKey) || 0;
+    const cardioMinutes = cardioCount * DEFAULT_CARDIO_MINUTES;
+
+    const stretchCount = stretchMap.get(groupKey) || 0;
+    const stretchMinutes = stretchCount * DEFAULT_STRETCH_MINUTES;
+
+    const totalMinutes = strengthMinutes + cardioMinutes + stretchMinutes;
+
+    const totalHours = Math.round(totalMinutes / 60);
 
     return {
       label,
-      totalHours: +((strengthData?.totalTime || 0) / 60).toFixed(0),
+      totalHours,
     };
   });
 
@@ -275,7 +357,7 @@ const getTimeAnalytics = catchAsync(async (req, res) => {
       interval,
       summary: formattedSummary,
     },
-    message: 'Session time analytics retrieved successfully.',
+    message: 'Session time analytics (rough estimate) retrieved successfully.',
   });
 });
 
@@ -311,19 +393,22 @@ const getExerciseDistribution = catchAsync(async (req, res) => {
 const getUserAnalytics = catchAsync(async (req, res) => {
   const now = new Date();
   const activeUserIds = new Set();
+
   const [strengthUsers, cardioUsers, stretchUsers] = await Promise.all([
     StrengthSession.distinct('userId'),
     CardioSession.distinct('userId'),
     StretchSession.distinct('userId'),
   ]);
+
   [...strengthUsers, ...cardioUsers, ...stretchUsers].map(id => id.toString()).forEach(id => activeUserIds.add(id));
+
   const activeUsers = activeUserIds.size;
 
   const totalUsers = await User.countDocuments({});
   const engagementRate = totalUsers ? ((activeUsers / totalUsers) * 100).toFixed(2) + '%' : '0%';
 
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endOfDay = new Date(startOfDay);
+  const endOfDay = new Date(startOfDay.getTime());
   endOfDay.setDate(startOfDay.getDate() + 1);
 
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -332,25 +417,38 @@ const getUserAnalytics = catchAsync(async (req, res) => {
   const startOfYear = new Date(now.getFullYear(), 0, 1);
   const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
-  const sumBetween = async (startDate, endDate) => {
-    const agg = await Subscription.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: startDate,
-            $lt: endDate,
-          },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: {$sum: '$amount'},
-        },
-      },
-    ]);
-    return agg.length ? agg[0].total : 0;
-  };
+  let usdRatesMap = null;
+  try {
+    const fxResponse = await axios.get('https://open.er-api.com/v6/latest/USD');
+    usdRatesMap = fxResponse.data.rates || {};
+  } catch (err) {
+    console.error('Failed to fetch USD→AllRates:', err.message);
+    usdRatesMap = {};
+  }
+
+  async function sumBetween(startDate, endDate) {
+    const subs = await Subscription.find({
+      createdAt: {$gte: startDate, $lt: endDate},
+    }).select('amount currency');
+
+    let totalUsd = 0;
+
+    for (const sub of subs) {
+      const {amount, currency} = sub;
+
+      if (currency === 'USD') {
+        totalUsd += amount;
+      } else {
+        const rate = usdRatesMap[currency];
+        if (rate) {
+          totalUsd += amount / rate;
+        } else {
+          console.warn(`No FX rate for currency "${currency}". Skipping that subscription.`);
+        }
+      }
+    }
+    return Math.round(totalUsd * 100) / 100;
+  }
 
   const [todaySales, monthSales, annualSales] = await Promise.all([
     sumBetween(startOfDay, endOfDay),
@@ -368,7 +466,7 @@ const getUserAnalytics = catchAsync(async (req, res) => {
       monthSales,
       annualSales,
     },
-    message: 'Overall user analytics',
+    message: 'Overall user analytics (all subscription‐revenues normalized to USD)',
   });
 });
 
@@ -448,26 +546,42 @@ const getHabitAnalytics = catchAsync(async (req, res) => {
 const getSubscriptionStats = catchAsync(async (req, res) => {
   const now = new Date();
 
-  const revenueAgg = await Subscription.aggregate([
-    {$match: {status: 'ACTIVE'}},
-    {
-      $group: {
-        _id: '$productId',
-        total: {$sum: '$amount'},
-      },
-    },
-  ]);
+  let usdRatesMap = {};
+  try {
+    const fxResponse = await axios.get('https://open.er-api.com/v6/latest/USD');
+    usdRatesMap = fxResponse.data.rates || {};
+  } catch (err) {
+    console.error('Failed to fetch FX rates:', err.message);
+    usdRatesMap = {};
+  }
 
-  const revenueByPlan = {
-    monthly: 0,
-    annual: 0,
-    totalMonthlySubs: 0,
-    totalAnnualSubs: 0,
-  };
+  const activeSubs = await Subscription.find({status: 'ACTIVE'}).select('amount currency productId');
 
-  for (const {_id, total} of revenueAgg) {
-    if (_id === 'bamttclub_monthly_plan') revenueByPlan.monthly = total;
-    if (_id === 'bamttclub_annual_plan') revenueByPlan.annual = total;
+  let monthlyRevenueUsd = 0;
+  let annualRevenueUsd = 0;
+
+  for (const sub of activeSubs) {
+    const {amount, currency, productId} = sub;
+    let amountInUsd = 0;
+
+    if (currency === 'USD') {
+      amountInUsd = amount;
+    } else {
+      const rate = usdRatesMap[currency];
+      if (rate) {
+        amountInUsd = amount / rate;
+      } else {
+        console.warn(`Unknown currency "${currency}" on subscription. Skipping.`);
+        continue;
+      }
+    }
+
+    amountInUsd = Math.round(amountInUsd * 100) / 100;
+    if (productId === 'bamttclub_monthly_plan') {
+      monthlyRevenueUsd += amountInUsd;
+    } else if (productId === 'bamttclub_annual_plan') {
+      annualRevenueUsd += amountInUsd;
+    }
   }
 
   const [monthlyUsers, annualUsers] = await Promise.all([
@@ -491,19 +605,22 @@ const getSubscriptionStats = catchAsync(async (req, res) => {
     Subscription.countDocuments({productId: 'bamttclub_annual_plan'}),
   ]);
 
-  revenueByPlan.totalMonthlySubs = totalMonthly;
-  revenueByPlan.totalAnnualSubs = totalAnnual;
-  const data = {
-    revenueByPlan,
-    monthlyUsers,
-    annualUsers,
-    freeTrialUsers,
+  const revenueByPlan = {
+    monthly: Math.round(monthlyRevenueUsd * 100) / 100,
+    annual: Math.round(annualRevenueUsd * 100) / 100,
+    totalMonthlySubs: totalMonthly,
+    totalAnnualSubs: totalAnnual,
   };
 
   res.status(200).json({
     status: true,
-    message: 'Subscription stats fetched successfully',
-    data,
+    message: 'Subscription stats fetched successfully (all revenue in USD)',
+    data: {
+      revenueByPlan,
+      monthlyUsers,
+      annualUsers,
+      freeTrialUsers,
+    },
   });
 });
 
