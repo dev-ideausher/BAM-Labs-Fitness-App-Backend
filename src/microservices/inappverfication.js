@@ -687,7 +687,8 @@ const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
     const start = new Date(latestSubscription.startDate);
 
     const trialEnd = new Date(start);
-    trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 21));
+    // trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 21));
+    trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 30));
 
     const trialEndMidnightUtc = Date.UTC(trialEnd.getUTCFullYear(), trialEnd.getUTCMonth(), trialEnd.getUTCDate());
 

@@ -43,8 +43,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: null,
-      unique: true,
-      sparse: true,
+      // unique: true,
+      // sparse: true,
     },
     email: {
       type: String,
@@ -164,6 +164,14 @@ userSchema.pre('save', async function (next) {
     next(err);
   }
 });
+
+userSchema.index(
+  { phone: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { phone: { $type: "string", $ne: null } },
+  }
+);
 
 userSchema.plugin(paginate);
 
