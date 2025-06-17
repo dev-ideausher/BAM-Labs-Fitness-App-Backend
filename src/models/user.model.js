@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const {paginate} = require('./plugins/paginate');
+const ApiError = require('../utils/ApiError');
+const httpStatus = require('http-status');
 
 const userSchema = new mongoose.Schema(
   {
@@ -152,11 +154,14 @@ userSchema.pre('save', async function (next) {
         _id: { $ne: this._id },
       });
 
-      if (existingUser) {
-        const error = new Error('Email or phone already in use');
-        error.statusCode = 409;
-        return next(error);
-      }
+      // if (existingUser) {
+      //   const error = new Error('Email or phone already in use');
+      //   error.statusCode = 409;
+      //   return next(error);
+      // }
+     if (existingUser) {
+      return next(new ApiError(httpStatus.CONFLICT, 'Email or phone already in use'));
+    }
     }
 
     next();
