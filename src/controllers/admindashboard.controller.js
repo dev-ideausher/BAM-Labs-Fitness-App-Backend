@@ -555,7 +555,8 @@ const getSubscriptionStats = catchAsync(async (req, res) => {
     usdRatesMap = {};
   }
 
-  const activeSubs = await Subscription.find({status: 'ACTIVE'}).select('amount currency productId');
+  // const activeSubs = await Subscription.find({status: 'ACTIVE'}).select('amount currency productId');
+  const activeSubs = await Subscription.find({status: { $in: ['ACTIVE', 'EXPIRED'] }}).select('amount currency productId');
 
   let monthlyRevenueUsd = 0;
   let annualRevenueUsd = 0;
