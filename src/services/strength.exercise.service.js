@@ -1,11 +1,20 @@
 const {StrengthExercise, CustomStrengthExercise} = require('../models');
 const {getAllData} = require('../utils/getAllData');
+const ApiError = require('../utils/ApiError');
+const httpStatus = require('http-status');
 
 const createStrenghtExercise = async strenghtExercise => {
   return await StrengthExercise.create(strenghtExercise);
 };
 
 const createCustomStrenghtExercise = async strenghtExercise => {
+  const existing = await CustomStrengthExercise.findOne({
+    exerciseName: {$regex: new RegExp(`^${strenghtExercise.exerciseName}$`, 'i')},
+    userId: strenghtExercise.userId,
+  });
+  if (existing) {
+    throw new ApiError(httpStatus.CONFLICT, 'You have already created an exercise with this name');
+  }
   return await CustomStrengthExercise.create(strenghtExercise);
 };
 

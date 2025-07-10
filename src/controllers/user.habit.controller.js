@@ -18,6 +18,7 @@ const validateHabitData = reqBody => {
     customNotificationTimes,
     customNotificationCount,
     offset,
+    name,
   } = reqBody;
 
   // Initialize a new habit object to return
@@ -35,6 +36,7 @@ const validateHabitData = reqBody => {
     customNotificationTimes,
     customNotificationCount,
     offset,
+     ...(name !== undefined ? { name: name.trim() } : {}),
   };
 
   if (customNotificationTimes && !Array.isArray(customNotificationTimes)) {
@@ -181,6 +183,14 @@ const updateUserHabit = catchAsync(async (req, res) => {
     userId: req.user._id,
   });
   const updated = await userHabitService.updateUserHabit(req.params.userHabitId, validHabit);
+   // If the client sent a new name, overwrite the global Habit.name
+ if (validHabit.name) {
+   await Habit.findByIdAndUpdate(
+    updated.habitId,
+    { name: validHabit.name },
+     { new: true }
+   );
+ }
   await cancelHabitNotifications(updated._id);
 
   if (updated.notificationToggle) {

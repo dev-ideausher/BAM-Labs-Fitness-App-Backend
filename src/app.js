@@ -52,13 +52,13 @@ cron.schedule('0 0 * * *', async () => {
   console.log('cron jon ends');
 });
 
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('10 0 * * *', async () => {
   console.log('Running workout reminder health check cron job');
   await checkAndRepairSchedules();
   console.log('Workout reminder health check cron job completed');
 });
 
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('15 0 * * *', async () => {
   console.log('Running habit notification health check cron job');
   await checkAndRepairHabitSchedules();
   console.log('Habit notification health check cron job completed');
