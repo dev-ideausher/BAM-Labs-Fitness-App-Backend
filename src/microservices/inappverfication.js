@@ -18,7 +18,6 @@ const APPLE_LOOKUP_URL = 'https://api.appstoreconnect.apple.com/v1';
 
 const initializeGoogleAuth = async () => {
   try {
-
     const serviceAccountToUse = config.serviceAccount;
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccountToUse,
@@ -608,136 +607,274 @@ const isAppleSubscription = subscription => {
   return isNumericId && subscription.transactionId.length < 20;
 };
 
+// const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
+//   const userId = req.user._id;
+
+//   try {
+//     const latestSubscription = await Subscription.findOne({user: userId}, {}, {sort: {createdAt: -1}});
+//     console.log(latestSubscription, 'latestSubscription');
+//     if (!latestSubscription) {
+//       return res.status(404).json({
+//         status: false,
+//         message: 'No subscription found for this user',
+//       });
+//     }
+
+//     const userObject = await User.findById(userId);
+
+//     if (!userObject) {
+//       throw new ApiError(404, 'User not found');
+//     }
+
+//     const isApplePurchase = isAppleSubscription(latestSubscription);
+
+//     let liveStatus;
+
+//     if (isApplePurchase) {
+//       const result = await verifyTransactionWithApple(latestSubscription.transactionId);
+
+//       if (!result.success) {
+//         throw new ApiError(500, `Failed to verify with Apple: ${result.error}`);
+//       }
+
+//       const transaction = result.data[0];
+//       liveStatus = {
+//         platform: 'ios',
+//         productId: transaction.productId || latestSubscription.productId,
+//         transactionId: transaction.transactionId,
+//         orderId: transaction.orderId,
+//         status: mapAppleStatusToOurStatus(transaction.status),
+//         startDate: new Date(transaction.purchaseDate),
+//         endDate: transaction.expiresDate ? new Date(transaction.expiresDate) : null,
+//         isActive: ['ACTIVE', 'PURCHASED', 'PURCHASED_NON_CONSUMABLE'].includes(transaction.status),
+//         amount: transaction.amount || latestSubscription.amount,
+//         currency: transaction.currency || latestSubscription.currency,
+//       };
+//     } else {
+//       const androidPublisher = await initializeGoogleAuth();
+
+//       const result = await verifyPurchase(
+//         androidPublisher,
+//         'com.iu.bam_fitness_app',
+//         latestSubscription.productId,
+//         latestSubscription.purchaseToken
+//       );
+
+//       if (!result.success) {
+//         throw new ApiError(500, `Failed to verify with Google Play: ${result.error}`);
+//       }
+
+//       const subscription = result.data;
+//       liveStatus = {
+//         platform: 'android',
+//         productId: subscription.productId,
+//         purchaseToken: latestSubscription.purchaseToken,
+//         orderId: subscription.orderId,
+//         status: mapGoogleStatusToOurStatus(subscription.subscriptionStatus),
+//         startDate: new Date(subscription.startTime),
+//         endDate: new Date(subscription.expiryTime),
+//         isActive: subscription.subscriptionStatus === 'ACTIVE',
+//         autoRenewing: subscription.autoRenewing,
+//         amount: subscription.amount || latestSubscription.amount,
+//         currency: subscription.currency || latestSubscription.currency,
+//       };
+//     }
+
+//     const now = new Date();
+//     const todayMidnightUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+
+//     const start = new Date(latestSubscription.startDate);
+
+//     const trialEnd = new Date(start);
+//     // trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 21));
+//     trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 30));
+
+//     const trialEndMidnightUtc = Date.UTC(trialEnd.getUTCFullYear(), trialEnd.getUTCMonth(), trialEnd.getUTCDate());
+
+//     const MS_PER_DAY = 1000 * 60 * 60 * 24;
+//     const diffDays = Math.ceil((trialEndMidnightUtc - todayMidnightUtc) / MS_PER_DAY);
+
+//     liveStatus.remainingFreeTrialDays = diffDays > 0 ? diffDays : 0;
+
+//     const mappedStatus = liveStatus.status;
+
+//     const isDatabaseOutdated = latestSubscription.status !== mappedStatus;
+//     if (isDatabaseOutdated) {
+//       latestSubscription.status = mappedStatus;
+//       latestSubscription.endDate = liveStatus.endDate || latestSubscription.endDate;
+//       if (liveStatus.autoRenewing !== undefined) {
+//         latestSubscription.autoRenewing = liveStatus.autoRenewing;
+//       }
+//       await latestSubscription.save();
+
+//       liveStatus.databaseUpdated = true;
+//     }
+
+//     liveStatus._id = latestSubscription._id;
+//     liveStatus.dbStatus = latestSubscription.status;
+
+//     liveStatus.user = userObject;
+
+//     return res.status(200).json({
+//       status: true,
+//       message: 'Current subscription status retrieved successfully',
+//       databaseUpdated: isDatabaseOutdated,
+//       data: liveStatus,
+//     });
+//   } catch (error) {
+//     console.error('Error in getCurrentSubscriptionStatus:', error);
+//     throw new ApiError(error.statusCode || 500, error.message || 'Failed to get current subscription status');
+//   }
+// });
+
 const getCurrentSubscriptionStatus = catchAsync(async (req, res) => {
   const userId = req.user._id;
-
-  try {
-    const latestSubscription = await Subscription.findOne({user: userId}, {}, {sort: {createdAt: -1}});
-    console.log(latestSubscription, 'latestSubscription');
-    if (!latestSubscription) {
-      return res.status(404).json({
-        status: false,
-        message: 'No subscription found for this user',
-      });
-    }
-
-    const userObject = await User.findById(userId);
-
-    if (!userObject) {
-      throw new ApiError(404, 'User not found');
-    }
-
-    const isApplePurchase = isAppleSubscription(latestSubscription);
-
-    let liveStatus;
-
-    if (isApplePurchase) {
-      const result = await verifyTransactionWithApple(latestSubscription.transactionId);
-
-      if (!result.success) {
-        throw new ApiError(500, `Failed to verify with Apple: ${result.error}`);
-      }
-
-      const transaction = result.data[0];
-      liveStatus = {
-        platform: 'ios',
-        productId: transaction.productId || latestSubscription.productId,
-        transactionId: transaction.transactionId,
-        orderId: transaction.orderId,
-        status: mapAppleStatusToOurStatus(transaction.status),
-        startDate: new Date(transaction.purchaseDate),
-        endDate: transaction.expiresDate ? new Date(transaction.expiresDate) : null,
-        isActive: ['ACTIVE', 'PURCHASED', 'PURCHASED_NON_CONSUMABLE'].includes(transaction.status),
-        amount: transaction.amount || latestSubscription.amount,
-        currency: transaction.currency || latestSubscription.currency,
-      };
-    } else {
-      const androidPublisher = await initializeGoogleAuth();
-
-      const result = await verifyPurchase(
-        androidPublisher,
-        'com.iu.bam_fitness_app',
-        latestSubscription.productId,
-        latestSubscription.purchaseToken
-      );
-
-      if (!result.success) {
-        throw new ApiError(500, `Failed to verify with Google Play: ${result.error}`);
-      }
-
-      const subscription = result.data;
-      liveStatus = {
-        platform: 'android',
-        productId: subscription.productId,
-        purchaseToken: latestSubscription.purchaseToken,
-        orderId: subscription.orderId,
-        status: mapGoogleStatusToOurStatus(subscription.subscriptionStatus),
-        startDate: new Date(subscription.startTime),
-        endDate: new Date(subscription.expiryTime),
-        isActive: subscription.subscriptionStatus === 'ACTIVE',
-        autoRenewing: subscription.autoRenewing,
-        amount: subscription.amount || latestSubscription.amount,
-        currency: subscription.currency || latestSubscription.currency,
-      };
-    }
-
-    const now = new Date();
-    const todayMidnightUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-
-    const start = new Date(latestSubscription.startDate);
-
-    const trialEnd = new Date(start);
-    // trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 21));
-    trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 30));
-
-    const trialEndMidnightUtc = Date.UTC(trialEnd.getUTCFullYear(), trialEnd.getUTCMonth(), trialEnd.getUTCDate());
-
-    const MS_PER_DAY = 1000 * 60 * 60 * 24;
-    const diffDays = Math.ceil((trialEndMidnightUtc - todayMidnightUtc) / MS_PER_DAY);
-
-    liveStatus.remainingFreeTrialDays = diffDays > 0 ? diffDays : 0;
-
-    const mappedStatus = liveStatus.status;
-
-    const isDatabaseOutdated = latestSubscription.status !== mappedStatus;
-    if (isDatabaseOutdated) {
-      latestSubscription.status = mappedStatus;
-      latestSubscription.endDate = liveStatus.endDate || latestSubscription.endDate;
-      if (liveStatus.autoRenewing !== undefined) {
-        latestSubscription.autoRenewing = liveStatus.autoRenewing;
-      }
-      await latestSubscription.save();
-
-      liveStatus.databaseUpdated = true;
-    }
-
-    liveStatus._id = latestSubscription._id;
-    liveStatus.dbStatus = latestSubscription.status;
-
-    liveStatus.user = userObject;
-
-    return res.status(200).json({
-      status: true,
-      message: 'Current subscription status retrieved successfully',
-      databaseUpdated: isDatabaseOutdated,
-      data: liveStatus,
-    });
-  } catch (error) {
-    console.error('Error in getCurrentSubscriptionStatus:', error);
-    throw new ApiError(error.statusCode || 500, error.message || 'Failed to get current subscription status');
+  const latestSubscription = await Subscription.findOne({user: userId}, null, {sort: {createdAt: -1}});
+  if (!latestSubscription) {
+    return res.status(404).json({status: false, message: 'No subscription found for this user'});
   }
+
+  const userObject = await User.findById(userId);
+  if (!userObject) throw new ApiError(404, 'User not found');
+
+  const isApple = isAppleSubscription(latestSubscription);
+  let liveStatus;
+  let isDatabaseUpdated = false;
+
+  if (isApple) {
+    let tx;
+    try {
+      const signed = await fetchAppleRenewalHistory(latestSubscription.transactionId);
+      if (!signed.length) throw new Error('Empty renewal array');
+      const txs = signed.map(decodeJWS).sort((a, b) => b.expiresDate - a.expiresDate);
+      tx = txs[0];
+    } catch (e) {
+      console.warn('Apple history lookup failed, using stored data:', e.message);
+      tx = {
+        purchaseDate: latestSubscription.startDate.getTime(),
+        expiresDate: latestSubscription.endDate.getTime(),
+        status: latestSubscription.status,
+        price: latestSubscription.amount * 1000,
+        currency: latestSubscription.currency,
+        productId: latestSubscription.productId,
+        transactionId: latestSubscription.transactionId,
+        originalTransactionId: latestSubscription.orderId,
+        webOrderLineItemId: latestSubscription.orderId,
+      };
+    }
+
+    const expiresMs = tx.expiresDate;
+    const mappedStatus = mapAppleStatusToOurStatus(tx.status, expiresMs);
+    const rawPrice = parseFloat(tx.price);
+    const convertedAmount = !isNaN(rawPrice) ? Number((rawPrice / 1000).toFixed(2)) : latestSubscription.amount;
+
+    liveStatus = {
+      platform: 'ios',
+      productId: tx.productId,
+      transactionId: tx.transactionId,
+      orderId: tx.webOrderLineItemId || tx.originalTransactionId,
+      status: mappedStatus,
+      startDate: latestSubscription.startDate,
+      endDate: new Date(expiresMs),
+      isActive: expiresMs > Date.now(),
+      amount: convertedAmount,
+      currency: tx.currency || latestSubscription.currency,
+      autoRenewing: true,
+    };
+
+    const changed =
+      latestSubscription.transactionId !== tx.transactionId ||
+      latestSubscription.status !== mappedStatus ||
+      latestSubscription.endDate.getTime() !== expiresMs ||
+      latestSubscription.amount !== convertedAmount;
+    if (changed) {
+      latestSubscription.transactionId = tx.transactionId;
+      latestSubscription.status = mappedStatus;
+      latestSubscription.endDate = new Date(expiresMs);
+      latestSubscription.amount = convertedAmount;
+      latestSubscription.currency = liveStatus.currency;
+      latestSubscription.autoRenewing = true;
+      await latestSubscription.save();
+      isDatabaseUpdated = true;
+    }
+  } else {
+    const androidPublisher = await initializeGoogleAuth();
+    const result = await verifyPurchase(
+      androidPublisher,
+      'com.iu.bam_fitness_app',
+      latestSubscription.productId,
+      latestSubscription.purchaseToken
+    );
+
+    if (!result.success) {
+      throw new ApiError(500, `Google Play verification failed: ${result.error}`);
+    }
+
+    const sub = result.data;
+    const expiresMs = new Date(sub.expiryTime).getTime();
+    const mappedStatus = mapGoogleStatusToOurStatus(sub.subscriptionStatus, expiresMs);
+
+    liveStatus = {
+      platform: 'android',
+      productId: sub.productId,
+      purchaseToken: latestSubscription.purchaseToken,
+      orderId: sub.orderId,
+      status: mappedStatus,
+      startDate: latestSubscription.startDate,
+      endDate: new Date(expiresMs),
+      isActive: expiresMs > Date.now(),
+      autoRenewing: sub.autoRenewing,
+      amount: sub.amount != null ? sub.amount : latestSubscription.amount,
+      currency: sub.currency || latestSubscription.currency,
+    };
+
+    const changed =
+      latestSubscription.endDate.getTime() !== expiresMs ||
+      latestSubscription.status !== mappedStatus ||
+      latestSubscription.amount !== liveStatus.amount;
+    if (changed) {
+      latestSubscription.endDate = new Date(expiresMs);
+      latestSubscription.status = mappedStatus;
+      latestSubscription.autoRenewing = liveStatus.autoRenewing;
+      latestSubscription.amount = liveStatus.amount;
+      latestSubscription.currency = liveStatus.currency;
+      await latestSubscription.save();
+      isDatabaseUpdated = true;
+    }
+  }
+
+  const now = new Date();
+  const trialEnd = new Date(latestSubscription.startDate);
+  trialEnd.setUTCDate(trialEnd.getUTCDate() + (latestSubscription.freeTrialDays || 30));
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diffDays = Math.ceil((trialEnd.getTime() - now.getTime()) / msPerDay);
+  liveStatus.remainingFreeTrialDays = Math.max(0, diffDays);
+
+  liveStatus._id = latestSubscription._id;
+  liveStatus.dbStatus = latestSubscription.status;
+  liveStatus.user = userObject;
+
+  return res.status(200).json({
+    status: true,
+    message: 'Current subscription status retrieved successfully',
+    databaseUpdated: isDatabaseUpdated,
+    data: liveStatus,
+  });
 });
 
-const mapAppleStatusToOurStatus = appleStatus => {
-  if (!appleStatus) return 'EXPIRED';
-
+const mapAppleStatusToOurStatus = (appleStatus, expiresDateMs) => {
+  const now = Date.now();
+  if (typeof expiresDateMs === 'number' && expiresDateMs > now) {
+    return 'ACTIVE';
+  }
   switch (appleStatus) {
+    case 'FREE_TRIAL':
+      return 'FREE_TRIAL';
     case 'ACTIVE':
     case 'PURCHASED':
     case 'PURCHASED_NON_CONSUMABLE':
       return 'ACTIVE';
-    case 'FREE_TRIAL':
-      return 'FREE_TRIAL';
     case 'EXPIRED':
     case 'EXPIRED_NON_RENEWING':
       return 'EXPIRED';
@@ -750,14 +887,16 @@ const mapAppleStatusToOurStatus = appleStatus => {
   }
 };
 
-const mapGoogleStatusToOurStatus = googleStatus => {
-  if (!googleStatus) return 'EXPIRED';
-
+const mapGoogleStatusToOurStatus = (googleStatus, expiresDateMs) => {
+  const now = Date.now();
+  if (typeof expiresDateMs === 'number' && expiresDateMs > now) {
+    return 'ACTIVE';
+  }
   switch (googleStatus) {
-    case 'ACTIVE':
-      return 'ACTIVE';
     case 'FREE_TRIAL':
       return 'FREE_TRIAL';
+    case 'ACTIVE':
+      return 'ACTIVE';
     case 'EXPIRED':
       return 'EXPIRED';
     case 'CANCELED_BY_USER':
@@ -765,6 +904,71 @@ const mapGoogleStatusToOurStatus = googleStatus => {
       return 'CANCELLED';
     default:
       return 'EXPIRED';
+  }
+};
+
+async function fetchAppleRenewalHistory(originalTransactionId, isSandbox = false) {
+  const base = isSandbox
+    ? 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1'
+    : 'https://api.storekit.itunes.apple.com/inApps/v1';
+  const url = `${base}/history/${originalTransactionId}`;
+  const token = generateJWTToken();
+
+  const resp = await axios.get(url, {headers: {Authorization: `Bearer ${token}`}});
+  return resp.data.signedTransactions || [];
+}
+
+function decodeJWS(jws) {
+  const [, payloadB64] = jws.split('.');
+  const json = Buffer.from(payloadB64, 'base64').toString('utf8');
+  return JSON.parse(json);
+}
+
+const getLatestRenewal = async (req, res, next) => {
+  try {
+    const {originalTransactionId} = req.params;
+    const isSandbox = req.query.sandbox === 'true';
+    const base = isSandbox
+      ? 'https://api.storekit-sandbox.itunes.apple.com/inApps/v1'
+      : 'https://api.storekit.itunes.apple.com/inApps/v1';
+    const url = `${base}/history/${originalTransactionId}`;
+    const token = generateJWTToken();
+
+    const resp = await axios.get(url, {
+      headers: {Authorization: `Bearer ${token}`},
+    });
+
+    const signed = resp.data.signedTransactions || [];
+    if (!signed.length) {
+      return res.status(404).json({
+        status: false,
+        message: 'No renewal history found—check originalTransactionId & environment',
+      });
+    }
+
+    const transactions = signed.map(jws => {
+      const [, payloadB64] = jws.split('.');
+      const payloadJson = Buffer.from(payloadB64, 'base64').toString('utf8');
+      return JSON.parse(payloadJson);
+    });
+
+    transactions.sort((a, b) => b.expiresDate - a.expiresDate);
+    const latest = transactions[0];
+
+    return res.json({
+      status: true,
+      data: {
+        transactionId: latest.transactionId,
+        purchaseDate: new Date(latest.purchaseDate),
+        expiresDate: new Date(latest.expiresDate),
+        productId: latest.productId,
+        price: latest.price,
+        currency: latest.currency
+      },
+    });
+  } catch (err) {
+    console.error('Error fetching renewal history:', err.response?.data || err.message);
+    next(err);
   }
 };
 
@@ -776,4 +980,5 @@ module.exports = {
   verifyJWSTransaction,
   getProductPrice,
   getCurrentSubscriptionStatus,
+  getLatestRenewal,
 };

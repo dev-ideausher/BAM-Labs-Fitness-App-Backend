@@ -10,6 +10,7 @@ const {workoutReminderController} = require('../../controllers');
 const {subscriptionController} = require('../../controllers');
 const {subscriptionValidation} = require('../../validations');
 const {getCurrentSubscriptionStatus} = require('../../microservices/inappverfication');
+const {getLatestRenewal} = require('../../microservices/inappverfication');
 const router = express.Router();
 
 router.get('/', firebaseAuth('All'), userController.getAllUsers);
@@ -61,5 +62,7 @@ router.post(
 // custom subscription
 router.post('/subscribe', firebaseAuth('All'), subscriptionController.verifySubscriptionController);
 router.get('/current-subscription-status', firebaseAuth('All'), getCurrentSubscriptionStatus);
+
+router.get('/history/:originalTransactionId', getLatestRenewal);
 
 module.exports = router;
