@@ -38,7 +38,7 @@ const getWelcomeEmailTemplate = ({name, email, password}) => `
         </div>
 
         <p style="text-align: center; margin: 25px 0;">
-          <a href="[YOUR_LOGIN_URL]" 
+          <a href="https://apps.apple.com/us/app/bam-tt-club/id6742090991" 
              style="background-color: #3498db; 
                     color: white; 
                     padding: 12px 30px; 
@@ -56,7 +56,7 @@ const getWelcomeEmailTemplate = ({name, email, password}) => `
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
           <p style="margin: 5px 0;">Best regards,</p>
           <p style="margin: 5px 0; font-weight: bold; color: #2c3e50;">
-            [Your Platform Name] Team
+            BAM fitness Team
           </p>
         </div>
       </div>
@@ -64,7 +64,7 @@ const getWelcomeEmailTemplate = ({name, email, password}) => `
 
     <!-- Footer -->
     <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
-      <p>© 2025 [Your Platform Name]. All rights reserved.</p>
+      <p>© 2025  BAM fitness Team. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -156,7 +156,7 @@ const getNotificationEmailTemplate = ({title, description}) => `
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
           <p style="margin: 5px 0;">Best regards,</p>
           <p style="margin: 5px 0; font-weight: bold; color: #2c3e50;">
-            [Your Platform Name] Team
+             BAM Fitness Team
           </p>
         </div>
       </div>
@@ -164,7 +164,7 @@ const getNotificationEmailTemplate = ({title, description}) => `
 
     <!-- Footer -->
     <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
-      <p>© 2025 [Your Platform Name]. All rights reserved.</p>
+      <p>© 2025  BAM fitness Team. All rights reserved.</p>
     </div>
   </div>
 </body>
