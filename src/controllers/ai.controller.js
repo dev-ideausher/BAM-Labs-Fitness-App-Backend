@@ -5,10 +5,18 @@ const {WorkoutState} = require('../models/WorkoutState.model');
 const {openai} = require('../config/config');
 const {addChatEntry, getChatHistory, clearChatHistory} = require('../services/chatHistory.service');
 
-const {processQuery, storeWorkoutPlan, initializeResources,getWorkoutPlanModel} = require('../Bam-Ai-chatbot/simpleQAAssistant');
+const {
+  processQuery,
+  storeWorkoutPlan,
+  initializeResources,
+  getWorkoutPlanModel,
+  deleteAllThreads,
+} = require('../Bam-Ai-chatbot/simpleQAAssistant');
 const {detectScheduleQuery, processExistingPlanQuery} = require('../Bam-Ai-chatbot/assistantManagerScheduleTime');
 
 const processFitnessQuery = async (req, res) => {
+  let newAssistant;
+  let newThread;
   try {
     const {query, fitnessLevel} = req.body;
     const userId = req.user._id;
@@ -17,38 +25,47 @@ const processFitnessQuery = async (req, res) => {
       return res.status(400).json({error: 'No query provided'});
     }
     const WorkoutPlan = getWorkoutPlanModel();
-    const existingPlan = await WorkoutPlan.findOne({ user: userId }).sort({ createdAt: -1 });
-    
+    const existingPlan = await WorkoutPlan.findOne({user: userId}).sort({createdAt: -1});
+    let workoutState = await WorkoutState.findOne({user: userId});
+
     if (existingPlan) {
       const isScheduleQuery = await detectScheduleQuery(query);
       if (isScheduleQuery) {
-        console.log("Detected schedule query, proceeding with schedule query handling.");
-        return await processExistingPlanQuery(req, res, userId, query, existingPlan);
+        // console.log('Detected schedule query, proceeding with schedule query handling.');
+        return await processExistingPlanQuery(req, res, userId, query, existingPlan, workoutState?.vectorStoreId);
       }
     }
-    
-    let workoutState = await WorkoutState.findOne({user: userId});
+
     if (!workoutState) {
-      const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
+      const {vectorStore, assistant, thread, fileInfo} = await initializeResources(fitnessLevel);
+      // console.log('Creating new workoutState and thread: ---- >', assistant.id, thread.id);
       workoutState = new WorkoutState({
         user: userId,
         fitnessLevel,
         assistantId: assistant.id,
         threadId: thread.id,
         vectorStoreId: vectorStore.id,
+        files: fileInfo,
       });
       await workoutState.save();
+      newThread = thread.id;
+      newAssistant = assistant.id;
     } else {
+      newAssistant = workoutState.assistantId;
+      newThread = workoutState.threadId;
       if (workoutState.fitnessLevel !== fitnessLevel) {
-        console.log(
-          `Fitness level changed from ${workoutState.fitnessLevel} to ${fitnessLevel}. Reinitializing resources.`
-        );
-        const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
+        // console.log(
+        //   `Fitness level changed from ${workoutState.fitnessLevel} to ${fitnessLevel}. Reinitializing resources.`
+        // );
+        const {vectorStore, assistant, thread, fileInfo} = await initializeResources(fitnessLevel, workoutState);
         workoutState.fitnessLevel = fitnessLevel;
         workoutState.assistantId = assistant.id;
         workoutState.threadId = thread.id;
         workoutState.vectorStoreId = vectorStore.id;
+        workoutState.files = fileInfo;
         await workoutState.save();
+        newAssistant = assistant.id;
+        newThread = thread.id;
       } else {
         try {
           await verifyVectorStore(workoutState.vectorStoreId);
@@ -56,16 +73,19 @@ const processFitnessQuery = async (req, res) => {
           await verifyThread(workoutState.threadId);
         } catch (err) {
           console.error('Error verifying resources:', err);
-          const {vectorStore, assistant, thread} = await initializeResources(fitnessLevel);
+          const {vectorStore, assistant, thread, fileInfo} = await initializeResources(fitnessLevel);
           workoutState.assistantId = assistant.id;
           workoutState.threadId = thread.id;
           workoutState.vectorStoreId = vectorStore.id;
+
           await workoutState.save();
+          newAssistant = assistant.id;
+          newThread = thread.id;
         }
       }
     }
-
-    const rawResponse = await processQuery(workoutState.threadId, workoutState.assistantId, query, userId);
+    // console.log('*****************', newThread, newAssistant, '*****************');
+    const rawResponse = await processQuery(newThread, newAssistant, query, userId, workoutState.vectorStoreId);
 
     let structuredResponse;
     try {
@@ -225,6 +245,15 @@ const deleteAllFile = catchAsync(async (req, res) => {
     files,
   });
 });
+
+const deleteThreads = catchAsync(async (req, res) => {
+  const files = await deleteAllThreads();
+
+  res.status(200).json({
+    files,
+  });
+});
+
 const deleteAllFiles = async () => {
   try {
     const files = await listUploadedFiles();
@@ -293,12 +322,12 @@ const getChatHistoryFromThread = async (req, res) => {
     });
   }
 };
-const transformChatHistory = (entries) => {
+const transformChatHistory = entries => {
   return entries.map(entry => ({
     query: entry.query,
-    "chat-response": { response: entry.response },
+    'chat-response': {response: entry.response},
     timestamp: entry.timestamp,
-    _id: entry._id
+    _id: entry._id,
   }));
 };
 const getChatHistoryFromDB = async (req, res) => {
@@ -315,7 +344,7 @@ const getChatHistoryFromDB = async (req, res) => {
     return res.status(200).json({
       status: true,
       // data: {chatHistory: history},
-      data: { chatHistory: transformedHistory },
+      data: {chatHistory: transformedHistory},
       message: 'Chat history retrieved successfully',
     });
   } catch (error) {
@@ -359,4 +388,5 @@ module.exports = {
   getChatHistoryFromThread,
   getChatHistoryFromDB,
   clearChatHistoryEndpoint,
+  deleteThreads,
 };

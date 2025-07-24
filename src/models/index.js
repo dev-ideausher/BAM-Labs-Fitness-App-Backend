@@ -10,9 +10,9 @@ const {PrimaryCategory} = require('./primary.category,model');
 const {TargetedMuscle} = require('./targeted.muscles.model');
 const {Admin} = require('./admin.model');
 const {ContactUs} = require('./contact.model');
-const {Content} = require("./content.model")
+const {Content} = require('./content.model');
 const {userNotification} = require('./userNotification.model');
-const { WorkoutState } = require('./WorkoutState.model');
+const {WorkoutState} = require('./WorkoutState.model');
 const {ChatHistory} = require('./chatEntrySchema.model');
 
 module.exports = {
@@ -34,5 +34,5 @@ module.exports = {
   Content,
   userNotification,
   WorkoutState,
-  ChatHistory
+  ChatHistory,
 };

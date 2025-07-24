@@ -11,6 +11,6 @@ router.delete('/vector-delete', aichatbotController.deleteAllVectorStore);
 router.get('/chat-history', firebaseAuth('user'), aichatbotController.getChatHistoryFromThread);
 router.get('/db', firebaseAuth('user'), aichatbotController.getChatHistoryFromDB);
 router.delete('/db', firebaseAuth('user'), aichatbotController.clearChatHistoryEndpoint);
-
+router.delete('/threads', aichatbotController.deleteThreads);
 
 module.exports = router;

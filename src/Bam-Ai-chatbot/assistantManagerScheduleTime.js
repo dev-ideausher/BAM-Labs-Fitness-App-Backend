@@ -39,6 +39,8 @@ Examples for YES (existing plan):
 - "How do I perform the bench press in my plan?"
 - "Whats my wrokout plan for next week?" -> YES
 - "What's my workout plan for this month?" -> YES
+- "Whats my wrokout plan for next month?" -> YES
+- "so is my plan currently fat loss oriented ?" -> YES
 
 Examples for NO (new plan):
 - "Workout plan for seven days"
@@ -58,7 +60,7 @@ Examples for NO (new plan):
     if (runStatus.status === 'completed') {
       const messages = await openai.beta.threads.messages.list(thread.id, {limit: 1, order: 'desc'});
       const content = messages.data[0].content.find(c => c.type === 'text')?.text?.value;
-      console.log(`[detectScheduleQuery] Classifier raw response: "${content}"`);
+      // console.log(`[detectScheduleQuery] Classifier raw response: "${content}"`);
       try {
         await openai.beta.threads.del(thread.id);
       } catch (cleanupError) {
@@ -117,7 +119,7 @@ const createClassifierAssistant = async () => {
   return assistant.id;
 };
 
-const initializeScheduleQueryResourcesSimple = async () => {
+const initializeScheduleQueryResourcesSimple = async vStoreId => {
   try {
     const assistant = await openai.beta.assistants.create({
       name: 'Workout Schedule Assistant (Simple)',
@@ -143,7 +145,7 @@ const initializeScheduleQueryResourcesSimple = async () => {
       temperature: 0.7,
     });
 
-    const thread = await createThread();
+    const thread = await createThread(vStoreId);
     return {assistant, thread};
   } catch (error) {
     console.error('Error initializing simple schedule query resources:', error);
@@ -199,48 +201,48 @@ const filterWorkoutPlanByDayRange = (formattedPlan, range) => {
   return filteredPlan;
 };
 
-const processExistingPlanQuery = async (req, res, userId, query, existingPlan) => {
+const processExistingPlanQuery = async (req, res, userId, query, existingPlan, vStoreId) => {
   try {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    const {assistant, thread} = await initializeScheduleQueryResourcesSimple();
+    const {assistant, thread} = await initializeScheduleQueryResourcesSimple(vStoreId);
 
     const formattedPlan = formatWorkoutPlanForAssistant(existingPlan);
     const targetDays = computeTargetDays(query, formattedPlan);
     const planToSend = targetDays ? filterWorkoutPlanByDayRange(formattedPlan, targetDays) : formattedPlan;
 
     const enhancedQuery = `
-User Information:
-Name: ${user.name || 'N/A'}
-Weight: ${user.weight || 'N/A'}
-Height: ${user.height || 'N/A'}
-BMI: ${user.bmi || 'N/A'}
-Body Fat: ${user.bodyFat || 'N/A'}
-Gender: ${user.gender || 'N/A'}
+    User Information:
+    Name: ${user.name || 'N/A'}
+    Weight: ${user.weight || 'N/A'}
+    Height: ${user.height || 'N/A'}
+    BMI: ${user.bmi || 'N/A'}
+    Body Fat: ${user.bodyFat || 'N/A'}
+    Gender: ${user.gender || 'N/A'}
 
-Workout Plan Start Date: ${formattedPlan.startDate}
+    Workout Plan Start Date: ${formattedPlan.startDate}
 
-User Query: ${query}
+    User Query: ${query}
 
-Target Workout Days: ${targetDays ? `Day ${targetDays.start} to Day ${targetDays.end}` : 'Not specified'}
+    Target Workout Days: ${targetDays ? `Day ${targetDays.start} to Day ${targetDays.end}` : 'Not specified'}
 
-Current Workout Plan Details:
-${JSON.stringify(planToSend, null, 2)}
+    Current Workout Plan Details:
+    ${JSON.stringify(planToSend, null, 2)}
 
-Please provide a clear and detailed summary for the requested day(s) in plain language. For each workout day, include:
-- The day header (e.g., "Workout Plan for Day 1")
-- For each exercise, list:
-  - Exercise Name
-  - Description
-  - Sets
-  - Reps
-  - Equipment
-  - Interval
-  - Estimated Time
-  - Estimated Calories
+    Please provide a clear and detailed summary for the requested day(s) in plain language. For each workout day, include:
+    - The day header (e.g., "Workout Plan for Day 1")
+    - For each exercise, list:
+    - Exercise Name
+    - Description
+    - Sets
+    - Reps
+    - Equipment
+    - Interval
+    - Estimated Time
+    - Estimated Calories
 
-Do not include any internal calculations or meta-comments in your answer.
+    Do not include any internal calculations or meta-comments in your answer.
     `;
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',

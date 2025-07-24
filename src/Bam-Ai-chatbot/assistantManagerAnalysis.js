@@ -87,6 +87,7 @@ IMPORTANT: Your response MUST be valid JSON within a markdown code block.
       this.thread = await openai.beta.threads.create();
     }
   }
+  
   async computeDynamicAnalysis() {
     try {
       const queryParams = {

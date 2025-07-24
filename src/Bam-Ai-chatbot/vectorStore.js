@@ -60,6 +60,7 @@ async function getOrCreateVectorStore(userId) {
   }
   return workoutState;
 }
+
 async function getOrCreateAssistant(workoutState) {
   if (!workoutState.assistantId) {
     const response = await openai.beta.assistants.create({
@@ -90,6 +91,7 @@ async function getOrCreateThread(userId) {
   }
   return workoutState.threadId;
 }
+
 async function processQuery(userId, query) {
   const workoutState = await getOrCreateVectorStore(userId);
   const assistantId = await getOrCreateAssistant(workoutState);
@@ -124,6 +126,7 @@ async function processQuery(userId, query) {
     throw new Error('Failed to process query');
   }
 }
+
 async function getChatHistoryFromThread(threadId) {
   try {
     console.log(`Retrieving chat history for thread: ${threadId}`);

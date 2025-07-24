@@ -5,8 +5,15 @@ const workoutStateSchema = new mongoose.Schema({
   assistantId: String,
   threadId: String,
   vectorStoreId: String,
-  fitnessLevel: { type: String, required: true },
+  fitnessLevel: {type: String, required: true},
   createdAt: {type: Date, default: Date.now},
+  files: [
+    {
+      fileId: String,
+      fileName: String,
+      createdAt: Date,
+    },
+  ],
 });
 
 const WorkoutState = mongoose.model('WorkoutState', workoutStateSchema);
