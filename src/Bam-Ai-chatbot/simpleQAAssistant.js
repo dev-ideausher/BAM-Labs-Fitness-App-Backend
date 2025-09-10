@@ -8,126 +8,47 @@ const Exercise = require('../models/excercise.model');
 const resources = {};
 let currentLevel = null;
 
-const waitForVectorStoreReady = async (vectorStoreId, maxAttempts = 120, delay = 1000) => {
+const waitForVectorStoreReady = async (vectorStoreId, maxAttempts = 60, delay = 1000) => {
   let attempts = 0;
   while (attempts < maxAttempts) {
     const vs = await openai.beta.vectorStores.retrieve(vectorStoreId);
     console.log(`Polling vector store ${vectorStoreId}: Attempt ${attempts}, file_counts:`, vs.file_counts);
-    if (vs.file_counts && vs.file_counts.completed === vs.file_counts.total) {
-      console.log(`Vector store ${vectorStoreId} is ready.`);
-      return vs;
+
+    if (vs.file_counts) {
+      if (vs.file_counts.failed > 0) {
+        console.error(`Vector store ${vectorStoreId} has ${vs.file_counts.failed} failed files`);
+
+        const files = await openai.beta.vectorStores.files.list(vectorStoreId);
+        const failedFiles = files.data.filter(file => file.status === 'failed');
+        console.error(
+          'Failed files:',
+          failedFiles.map(f => ({id: f.id, status: f.status}))
+        );
+
+        throw new Error(`Vector store has ${vs.file_counts.failed} failed files. Check file format and content.`);
+      }
+
+      if (vs.file_counts.completed === vs.file_counts.total && vs.file_counts.total > 0) {
+        console.log(`Vector store ${vectorStoreId} is ready with ${vs.file_counts.completed} files.`);
+        return vs;
+      }
+
+      if (vs.file_counts.in_progress === 0 && vs.file_counts.completed === 0 && vs.file_counts.total > 0) {
+        throw new Error(`Vector store appears stuck - no files processing or completed`);
+      }
     }
+
     await new Promise(resolve => setTimeout(resolve, delay));
     attempts++;
   }
-  throw new Error(`Vector store ${vectorStoreId} is not ready after waiting`);
+  throw new Error(`Vector store ${vectorStoreId} not ready after ${maxAttempts} attempts`);
 };
-
-// const createVectorStore = async userLevel => {
-//   try {
-//     // Step 1: Create the vector store
-//     const vectorStore = await openai.beta.vectorStores.create({name: 'Fitness Data'});
-//     console.log(`Created vector store with id: ${vectorStore.id}`);
-
-//     // Step 2: Define the file mapping for each level
-//     const levelMapping = {
-//       Basic: 'Updated_Basic_Exercises.json',
-//       Intermediate: 'Updated_Intermediate_Exercises.json',
-//       Advanced: 'Updated_Advanced_Exercises.json',
-//     };
-
-//     // Map the userLevel to the respective file
-//     const selectedFileName = levelMapping[userLevel];
-
-//     // If the selected file does not exist, throw an error
-//     if (!selectedFileName) {
-//       throw new Error(`Invalid user level: ${userLevel}`);
-//     }
-
-//     // Step 3: Determine the file path for the selected level
-//     const localFilePath = path.join(__dirname, '..', '..', 'data', selectedFileName);
-
-//     // Check if the file exists
-//     if (!fs.existsSync(localFilePath)) {
-//       console.error(`File for level ${userLevel} not found at ${localFilePath}.`);
-//       throw new Error(`File for level ${userLevel} not found.`);
-//     }
-
-//     console.log(`Uploading file for level ${userLevel}: ${selectedFileName}`);
-
-//     // Step 4: Read the file stream for the selected file
-//     const fileStream = fs.createReadStream(localFilePath);
-
-//     const fileResponse = await openai.files.create({
-//       file: fileStream,
-//       purpose: 'assistants',
-//     });
-
-//     // Step 5: Upload the file and poll the status
-//     const fileBatch = await openai.beta.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, {files: [fileStream]});
-//     console.log(`File batch status: ${fileBatch.status}`);
-//     console.log(`File counts: ${JSON.stringify(fileBatch.file_counts)}`);
-
-//     // Step 6: Check if the file batch was completed successfully
-//     if (fileBatch.status !== 'completed') {
-//       throw new Error('File batch upload did not complete successfully.');
-//     }
-
-//     // Step 7: List the files in the vector store
-//     const vectorStoreFiles = await openai.beta.vectorStores.files.list(vectorStore.id);
-
-//     // Ensure that files were returned and exist
-//     if (!vectorStoreFiles || !vectorStoreFiles.data || vectorStoreFiles.data.length === 0) {
-//       throw new Error('No files found in the vector store.');
-//     }
-
-//     console.log('List of files in vector store:', JSON.stringify(vectorStoreFiles.body.data));
-
-//     // Step 8: Link the uploaded file to the vector store
-//     const fileInfoList = await Promise.all(
-//       vectorStoreFiles.data.map(async file => {
-//         try {
-//           // Step 8a: Link each file to the vector store using vectorStores.files.create
-//           const response = await openai.beta.vectorStores.files.create(vectorStore.id, {
-//             file_id: file.id, // Link the file by its ID
-//           });
-//           console.log('File linked to vector store:', response);
-
-//           // Step 8b: Retrieve the original file information from OpenAI Files API
-//           const fileDetails = await openai.files.retrieve(file.id);
-
-//           return {
-//             fileId: file.id,
-//             fileName: fileDetails.filename, // Original filename from OpenAI
-//             fileStatus: file.status,
-//             usageBytes: file.usage_bytes,
-//             createdAt: file.created_at,
-//             purpose: fileDetails.purpose,
-//             bytes: fileDetails.bytes,
-//           };
-//         } catch (error) {
-//           console.error(`Error retrieving file details for ${file.id}:`, error);
-//           return {
-//             fileId: file.id,
-//             fileName: `Unknown_${file.id}`,
-//             createdAt: file.created_at,
-//           };
-//         }
-//       })
-//     );
-
-//     console.log('Files to store in the database:', fileInfoList);
-
-//     return {vectorStore, fileInfoList};
-//   } catch (error) {
-//     console.error('Error creating vector store:', error);
-//     throw error;
-//   }
-// };
 
 const createVectorStore = async userLevel => {
   try {
-    const vectorStore = await openai.beta.vectorStores.create({name: 'Fitness Data'});
+    const vectorStore = await openai.beta.vectorStores.create({
+      name: `Fitness Data - ${userLevel}`,
+    });
     console.log(`Created vector store with id: ${vectorStore.id}`);
 
     const levelMapping = {
@@ -142,14 +63,23 @@ const createVectorStore = async userLevel => {
       throw new Error(`Invalid user level: ${userLevel}`);
     }
 
+    console.log(`Processing ONLY file for level ${userLevel}: ${selectedFileName}`);
+
     const localFilePath = path.join(__dirname, '..', '..', 'data', selectedFileName);
 
     if (!fs.existsSync(localFilePath)) {
-      console.error(`File for level ${userLevel} not found at ${localFilePath}.`);
-      throw new Error(`File for level ${userLevel} not found.`);
+      console.error(`File for level ${userLevel} not found at ${localFilePath}`);
+
+      const dataDir = path.join(__dirname, '..', '..', 'data');
+      if (fs.existsSync(dataDir)) {
+        const files = fs.readdirSync(dataDir);
+        console.log('Available files in data directory:', files);
+      }
+
+      throw new Error(`File for level ${userLevel} not found: ${selectedFileName}`);
     }
 
-    // console.log(`Uploading file for level ${userLevel}: ${selectedFileName}`);
+    console.log(`Uploading SINGLE file: ${selectedFileName}`);
 
     const fileStream = fs.createReadStream(localFilePath);
 
@@ -158,16 +88,17 @@ const createVectorStore = async userLevel => {
       purpose: 'assistants',
     });
 
-    // console.log(`Uploaded file with ID: ${fileResponse.id}`);
+    console.log(`Uploaded file with ID: ${fileResponse.id}`);
 
     const linkFileResponse = await openai.beta.vectorStores.files.create(vectorStore.id, {
       file_id: fileResponse.id,
     });
 
-    // console.log('File linked to vector store:', linkFileResponse);
+    console.log('File linked to vector store:', linkFileResponse);
+
+    await waitForVectorStoreReady(vectorStore.id, 30, 2000);
 
     const fileDetails = await openai.files.retrieve(fileResponse.id);
-    // console.log('File details:', fileDetails);
 
     return {
       vectorStore,
