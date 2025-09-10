@@ -127,29 +127,23 @@ const waitForVectorStoreReady = async (vectorStoreId, maxAttempts = 120, delay =
 
 const createVectorStore = async userLevel => {
   try {
-    // Step 1: Create the vector store
     const vectorStore = await openai.beta.vectorStores.create({name: 'Fitness Data'});
     console.log(`Created vector store with id: ${vectorStore.id}`);
 
-    // Step 2: Define the file mapping for each level
     const levelMapping = {
       Basic: 'Updated_Basic_Exercises.json',
       Intermediate: 'Updated_Intermediate_Exercises.json',
       Advanced: 'Updated_Advanced_Exercises.json',
     };
 
-    // Map the userLevel to the respective file
     const selectedFileName = levelMapping[userLevel];
 
-    // If the selected file does not exist, throw an error
     if (!selectedFileName) {
       throw new Error(`Invalid user level: ${userLevel}`);
     }
 
-    // Step 3: Determine the file path for the selected level
     const localFilePath = path.join(__dirname, '..', '..', 'data', selectedFileName);
 
-    // Check if the file exists
     if (!fs.existsSync(localFilePath)) {
       console.error(`File for level ${userLevel} not found at ${localFilePath}.`);
       throw new Error(`File for level ${userLevel} not found.`);
@@ -157,29 +151,24 @@ const createVectorStore = async userLevel => {
 
     // console.log(`Uploading file for level ${userLevel}: ${selectedFileName}`);
 
-    // Step 4: Read the file stream for the selected file
     const fileStream = fs.createReadStream(localFilePath);
 
-    // Step 5: Upload the file using openai.files.create
     const fileResponse = await openai.files.create({
       file: fileStream,
-      purpose: 'assistants', // Purpose for using this file
+      purpose: 'assistants',
     });
 
     // console.log(`Uploaded file with ID: ${fileResponse.id}`);
 
-    // Step 6: Link the uploaded file to the vector store
     const linkFileResponse = await openai.beta.vectorStores.files.create(vectorStore.id, {
       file_id: fileResponse.id,
     });
 
     // console.log('File linked to vector store:', linkFileResponse);
 
-    // Step 7: Retrieve the original file information from OpenAI Files API
     const fileDetails = await openai.files.retrieve(fileResponse.id);
     // console.log('File details:', fileDetails);
 
-    // Step 8: Return the vector store and file info
     return {
       vectorStore,
       fileInfo: {
@@ -203,7 +192,6 @@ const createAssistant = async (userLevel, vectorStoreId, fileInfo) => {
     const normalizedLevel = userLevel || 'Basic';
     // console.log(`Creating assistant for level: ${normalizedLevel} with vector store ID: ${vectorStoreId}`);
 
-    // Define the dynamic file keyword based on user fitness level
     const levelKeywords = {
       Basic: 'Basic_Exercises',
       Intermediate: 'Intermediate_Exercises',
@@ -218,7 +206,6 @@ const createAssistant = async (userLevel, vectorStoreId, fileInfo) => {
     // console.log(`Looking for file that contains: ${fileKeyword}`);
 
     // console.log(fileInfo, '<<<<<<<<<<<<<');
-    // Dynamically select the file ID and fileName from fileInfoList based on the fitness level
 
     if (!fileInfo) {
       throw new Error(`No file found for level: ${normalizedLevel}`);
@@ -305,7 +292,7 @@ const createThread = async vectorStoreId => {
   return await openai.beta.threads.create({
     tool_resources: {
       file_search: {
-        vector_store_ids: [vectorStoreId], // Explicitly set only the current vector store
+        vector_store_ids: [vectorStoreId],
       },
     },
   });
@@ -422,7 +409,7 @@ const processQuery = async (threadId, assistantId, query, userId, vectorStoreId)
       assistant_id: assistantId,
       tool_resources: {
         file_search: {
-          vector_store_ids: [vectorStoreId], // specify here
+          vector_store_ids: [vectorStoreId],
         },
       },
     });
@@ -583,7 +570,6 @@ const getWorkoutPlanModel = () => {
         instruction: String,
         // createdAt: {type: Date, default: Date.now},
         startDate: {type: Date, required: true},
-        // Tracks when the plan was last updated
         updatedAt: {type: Date, default: Date.now},
       }),
       'workoutplans'
@@ -693,9 +679,8 @@ const deleteAllThreads = async () => {
     let totalDeleted = 0;
 
     while (hasMore) {
-      // List threads with pagination
       const listParams = {
-        limit: 100, // Maximum allowed per request
+        limit: 100,
         order: 'desc',
       };
 
@@ -712,7 +697,6 @@ const deleteAllThreads = async () => {
 
       // console.log(`Found ${threadsList.data.length} threads to delete`);
 
-      // Delete threads in batches to avoid rate limits
       const batchSize = 10;
       for (let i = 0; i < threadsList.data.length; i += batchSize) {
         const batch = threadsList.data.slice(i, i + batchSize);
@@ -734,13 +718,11 @@ const deleteAllThreads = async () => {
 
         // console.log(`Batch completed: ${successful}/${batch.length} threads deleted successfully`);
 
-        // Small delay between batches to be respectful to API rate limits
         if (i + batchSize < threadsList.data.length) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
 
-      // Check if there are more threads to process
       hasMore = threadsList.has_more;
       if (hasMore && threadsList.data.length > 0) {
         after = threadsList.data[threadsList.data.length - 1].id;
