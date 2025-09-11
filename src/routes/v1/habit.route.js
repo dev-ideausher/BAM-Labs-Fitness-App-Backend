@@ -2,9 +2,10 @@ const express = require('express');
 
 const {firebaseAuth} = require('../../middlewares/firebaseAuth');
 const {habitController} = require('../../controllers');
-
+const categoryController = require('../../controllers/category.controller');
 const router = express.Router();
 
+router.get('/categories', firebaseAuth('All'), categoryController.getAllCategories);
 router.post('/', firebaseAuth('admin'), habitController.addHabit);
 
 router.post('/custom', firebaseAuth('All'), habitController.addCustomHabit);

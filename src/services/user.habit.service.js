@@ -24,7 +24,15 @@ const getUserHabit = async userHabitId => {
 };
 
 const getUserHabits = async (userId, query, populate) => {
-  return await getAllData(UserHabit, {userId, ...query}, populate);
+  const processedQuery = {...query};
+  if (processedQuery.category && typeof processedQuery.category === 'string') {
+    const mongoose = require('mongoose');
+    if (mongoose.isValidObjectId(processedQuery.category)) {
+      processedQuery.category = new mongoose.Types.ObjectId(processedQuery.category);
+    }
+  }
+  
+  return await getAllData(UserHabit, {userId, ...processedQuery}, populate);
 };
 
 // const updateUserHabit = async (userHabitId, habit) => {
