@@ -1,5 +1,6 @@
 const {Habit, CustomHabit} = require('../models');
 const {getAllData} = require('../utils/getAllData');
+const Category = require('../models/category.model')
 
 const addHabit = async habit => {
   return await Habit.create(habit);
@@ -16,7 +17,15 @@ const createCustomHabit = async (habit) => {
     throw new Error('You have already created a habit with this name');
   }
 
-  return await CustomHabit.create(habit);
+   if (habit.category) {
+    const catExists = await Category.exists({ _id: habit.category });
+    if (!catExists) {
+      throw new Error('Category not found');
+    }
+  }
+
+  const created = await CustomHabit.create(habit);
+  return CustomHabit.findById(created._id).populate('category');
 };
 
 const getAllHabits = async (query, populateConfig) => {
