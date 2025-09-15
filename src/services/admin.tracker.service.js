@@ -23,8 +23,8 @@ const getAllHabits = async ({page, limit}) => {
   return data;
 };
 
-const createNewHabit = async ({name}) => {
-  const habit = await Habit.create({name});
+const createNewHabit = async ({name, category}) => {
+  const habit = await Habit.create({name, category});
   return habit;
 };
 
@@ -109,8 +109,11 @@ const getSpecificCategory = async id => {
   const targetedMuscles = await TargetedMuscle.find({primaryCategory: primaryCategory._id, isDeleted: false});
   let res = [];
   for (const muscle of targetedMuscles) {
-    const excercizes = await StrengthExercise.find({targetedMuscle: muscle._id, isDeleted: false,
-      __t: { $exists: false } });
+    const excercizes = await StrengthExercise.find({
+      targetedMuscle: muscle._id,
+      isDeleted: false,
+      __t: {$exists: false},
+    });
     res.push({muscle, excercizes});
   }
   return res;

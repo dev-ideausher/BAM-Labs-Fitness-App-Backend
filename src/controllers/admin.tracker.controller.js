@@ -1,5 +1,6 @@
 const {trackerService} = require('../services');
 const catchAsync = require('../utils/catchAsync');
+const Category =require('../models/category.model')
 
 const getStrengthContent = catchAsync(async (req, res) => {
   const data = await trackerService.getStrengthContent();
@@ -20,8 +21,15 @@ const getAllHabits = catchAsync(async (req, res) => {
   });
 });
 const createNewHabit = catchAsync(async (req, res) => {
-  const {name} = req.body;
-  const habit = await trackerService.createNewHabit({name});
+  const {name, category} = req.body;
+  const existingCategory = await Category.findById(category);
+  if (!existingCategory) {
+    return res.status(400).json({
+      status: false,
+      message: 'Invalid category ID',
+    });
+  }
+  const habit = await trackerService.createNewHabit({name, category});
   res.status(200).json({
     status: true,
     message: 'Habit created successfully',
