@@ -25,7 +25,6 @@ const filteredResults = async (model, query) => {
 
   const convertedQuery = convertCommaSeparatedToArrays(queryObj);
 
-  // Preserve RegExp and MongoDB operators without JSON stringification
   const containsRegExpOrOperators = obj => {
     if (obj == null) return false;
     if (obj instanceof RegExp) return true;
