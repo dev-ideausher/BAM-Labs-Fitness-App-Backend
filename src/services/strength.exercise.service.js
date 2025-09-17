@@ -18,6 +18,10 @@ const createCustomStrenghtExercise = async strenghtExercise => {
   return await CustomStrengthExercise.create(strenghtExercise);
 };
 
+// const getAllExercises = async (query, populateConfig) => {
+//   const data = await getAllData(StrengthExercise, query, populateConfig);
+//   return data;
+// };
 const getAllExercises = async (query, populateConfig) => {
   const data = await getAllData(StrengthExercise, query, populateConfig);
   return data;
@@ -30,11 +34,16 @@ const getExerciseById = async id => {
 };
 
 const getUserCustomExercises = async (userId, query, populateConfig) => {
-  // const data = await getAllData(CustomStrengthExercise, query, populateConfig);
-  const data = await getAllData(CustomStrengthExercise, {userId, ...query}, populateConfig);
-  // console.log(data);
+  const data = await getAllData(CustomStrengthExercise, { userId, ...query }, populateConfig);
   return data;
 };
+
+// const getUserCustomExercises = async (userId, query, populateConfig) => {
+//   // const data = await getAllData(CustomStrengthExercise, query, populateConfig);
+//   const data = await getAllData(CustomStrengthExercise, {userId, ...query}, populateConfig);
+//   // console.log(data);
+//   return data;
+// };
 
 const getCustomExerciseById = async id => {
   return await CustomStrengthExercise.findById(id);
