@@ -18,7 +18,12 @@ const logSession = catchAsync(async (req, res) => {
       bestSession: data,
     });
   } catch (error) {
-    if (error.message === 'You have already logged a session for this exercise on selected date') {
+    if (
+      error.message === 'You have already logged a session for this exercise on selected date' ||
+      /Minimum \d+ sets required/.test(error.message) ||
+      /Maximum \d+ sets allowed/.test(error.message) ||
+      /Please log (at least|no more than)/.test(error.message)
+    ) {
       return res.status(400).json({status: false, message: error.message});
     }
     res.status(500).json({status: false, message: 'Internal server error', error: error.message});
@@ -135,7 +140,7 @@ const getDatedStrengthMap = catchAsync(async (req, res) => {
 const updateSession = catchAsync(async (req, res) => {
   const {id} = req.params;
 
-  const allowedFields = ['weight', 'sets', 'reps'];
+  const allowedFields = ['weight', 'sets', 'reps', 'setsDetails', 'logType'];
   const updates = Object.keys(req.body);
   const invalidFields = updates.filter(field => !allowedFields.includes(field));
   if (invalidFields.length > 0) {
@@ -170,16 +175,46 @@ const updateSession = catchAsync(async (req, res) => {
     });
   }
 
-  const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
-  const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
-  const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
-
-  const totalReps = safeSets * safeReps;
-  const totalWeight = safeWeight * totalReps;
+  let updatePayload = {};
+  if (req.body.logType === 'bySet' || existingSession.logType === 'bySet') {
+    const details = req.body.setsDetails || existingSession.setsDetails || [];
+    if (details.length < 3) {
+      return res.status(400).json({status: false, message: 'Please log at least 3 sets'});
+    }
+    let totalReps = 0;
+    let totalWeight = 0;
+    let sumWeights = 0;
+    for (const s of details) {
+      const w = Number(s.weight) || 0;
+      const r = Number(s.reps) || 0;
+      const tw = w * r;
+      totalReps += r;
+      totalWeight += tw;
+      sumWeights += w;
+      s.totalWeight = tw;
+    }
+    const avgWeight = sumWeights / details.length;
+    updatePayload = {
+      logType: 'bySet',
+      setsDetails: details,
+      sets: details.length,
+      weight: avgWeight,
+      reps: Math.round(totalReps / details.length),
+      totalReps,
+      totalWeight,
+    };
+  } else {
+    const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
+    const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
+    const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
+    const totalReps = safeSets * safeReps;
+    const totalWeight = safeWeight * totalReps;
+    updatePayload = {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight};
+  }
 
   const updatedSession = await StrengthSession.findOneAndUpdate(
     {_id: id, userId: req.user._id},
-    {$set: {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight}},
+    {$set: updatePayload},
     {new: true}
   );
 

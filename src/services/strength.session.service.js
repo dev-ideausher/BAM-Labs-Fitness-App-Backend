@@ -1,10 +1,23 @@
 const mongoose = require('mongoose');
-const {StrengthSession, StrengthBestSession} = require('../models');
+const {StrengthSession, StrengthBestSession, UserPreference} = require('../models');
 const {getAllData} = require('../utils/getAllData');
 const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
 
+const MIN_SETS = 3;
+const MAX_SETS = 7;
+
 const logStrengthSession = async strengthSession => {
   const {userId, exerciseId, dateTime} = strengthSession;
+  if (!strengthSession.logType || !strengthSession.unitSystem) {
+    const prefs = await UserPreference.findOne({userId}).lean();
+    if (!strengthSession.logType) {
+      strengthSession.logType = prefs?.logType || 'average';
+    }
+    if (!strengthSession.unitSystem) {
+      strengthSession.unitSystem = prefs?.unitSystem || 'metric';
+    }
+  }
+  const logType = strengthSession.logType;
   const existingSession = await StrengthSession.findOne({
     userId,
     exerciseId,
@@ -17,6 +30,48 @@ const logStrengthSession = async strengthSession => {
   if (existingSession) {
     throw new Error('You have already logged a session for this exercise on selected date');
   }
+
+  if (logType === 'bySet') {
+    const setsDetails = Array.isArray(strengthSession.setsDetails) ? strengthSession.setsDetails : [];
+    if (setsDetails.length < MIN_SETS) {
+      throw new Error(`Please log at least ${MIN_SETS} sets`);
+    }
+    if (setsDetails.length > MAX_SETS) {
+      throw new Error(`Please log no more than ${MAX_SETS} sets`);
+    }
+
+    let totalReps = 0;
+    let totalWeight = 0;
+    let sumWeights = 0;
+    for (const s of setsDetails) {
+      const w = Number(s.weight) || 0;
+      const r = Number(s.reps) || 0;
+      const tw = w * r;
+      totalReps += r;
+      totalWeight += tw;
+      sumWeights += w;
+      s.totalWeight = tw;
+    }
+    const avgWeight = setsDetails.length > 0 ? sumWeights / setsDetails.length : 0;
+    strengthSession.weight = avgWeight;
+    strengthSession.sets = setsDetails.length;
+    strengthSession.reps = Math.round(totalReps / (setsDetails.length || 1));
+    strengthSession.totalReps = totalReps;
+    strengthSession.totalWeight = totalWeight;
+  } else {
+    const safeWeight = Number(strengthSession.weight) || 0;
+    const safeSets = Number(strengthSession.sets) || 0;
+    const safeReps = Number(strengthSession.reps) || 0;
+    if (safeSets < MIN_SETS) {
+      throw new Error(`Minimum ${MIN_SETS} sets required`);
+    }
+    if (safeSets > MAX_SETS) {
+      throw new Error(`Maximum ${MAX_SETS} sets allowed`);
+    }
+    strengthSession.totalReps = safeSets * safeReps;
+    strengthSession.totalWeight = safeWeight * strengthSession.totalReps;
+  }
+
   return await StrengthSession.create(strengthSession);
 };
 

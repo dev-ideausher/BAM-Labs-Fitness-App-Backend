@@ -14,6 +14,7 @@ const {Content} = require('./content.model');
 const {userNotification} = require('./userNotification.model');
 const {WorkoutState} = require('./WorkoutState.model');
 const {ChatHistory} = require('./chatEntrySchema.model');
+const {UserPreference} = require('./user.preference.model');
 
 module.exports = {
   User,
@@ -35,4 +36,5 @@ module.exports = {
   userNotification,
   WorkoutState,
   ChatHistory,
+  UserPreference,
 };

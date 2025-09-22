@@ -64,5 +64,7 @@ router.post('/subscribe', firebaseAuth('All'), subscriptionController.verifySubs
 router.get('/current-subscription-status', firebaseAuth('All'), getCurrentSubscriptionStatus);
 
 router.get('/history/:originalTransactionId', getLatestRenewal);
+router.patch('/preferences',firebaseAuth('All'),  userController.updatePreferences);
+
 
 module.exports = router;
