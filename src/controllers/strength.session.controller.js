@@ -225,6 +225,20 @@ const updateSession = catchAsync(async (req, res) => {
   });
 });
 
+const getLastNSessions = catchAsync(async (req, res) => {
+  const n = Number(req.query.n) || 7;
+  const userId = req.user._id;
+  const {exerciseId} = req.params;
+
+  const sessions = await strengthSessionService.getLastNSessions(userId, exerciseId, n);
+
+  res.status(200).json({
+    status: true,
+    data: {sessions},
+    message: `Last ${sessions.length} session(s) fetched successfully`,
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
@@ -235,4 +249,5 @@ module.exports = {
   getSessionByDate,
   getDatedStrengthMap,
   updateSession,
+  getLastNSessions,
 };

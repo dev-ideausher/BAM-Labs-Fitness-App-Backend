@@ -12,8 +12,7 @@ router.get('/', firebaseAuth('user'), strengthSessionController.getMySessions);
 
 router.patch('/update/:id', firebaseAuth('user'), strengthSessionController.updateSession);
 
-
-router.get("/get/session/byDate/:exerciseId", firebaseAuth('user'), strengthSessionController.getSessionByDate);
+router.get('/get/session/byDate/:exerciseId', firebaseAuth('user'), strengthSessionController.getSessionByDate);
 
 router.get('/last-best/:exerciseId', firebaseAuth('user'), strengthSessionController.getLastAndBestSession);
 
@@ -21,7 +20,12 @@ router.get('/maps/:exerciseId', firebaseAuth('user'), strengthSessionController.
 
 router.get('/maps/dated/:exerciseId', firebaseAuth('user'), strengthSessionController.getDatedStrengthMaps);
 
-router.get('/weight/graph/:exerciseId', firebaseAuth('user'), strengthSessionController.getAvgWeightPerMonthByExcercize);
+router.get(
+  '/weight/graph/:exerciseId',
+  firebaseAuth('user'),
+  strengthSessionController.getAvgWeightPerMonthByExcercize
+);
 router.get('/newmap', firebaseAuth('user'), strengthSessionController.getDatedStrengthMap);
+router.get('/exercises/:exerciseId/lastsessions', firebaseAuth('user'), strengthSessionController.getLastNSessions);
 
 module.exports = router;

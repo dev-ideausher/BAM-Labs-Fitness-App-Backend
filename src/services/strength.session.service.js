@@ -141,46 +141,35 @@ const getLastSession = async (userId, exerciseId) => {
 // };
 
 const checkAndLogBestSession = async session => {
-  const { userId, sessionId } = session;
-  const { exerciseId, totalReps, weight } = session._doc;
+  const {userId, sessionId} = session;
+  const {exerciseId, totalReps, weight} = session._doc;
   const totalWork = weight * totalReps;
 
-  let bestSession = await StrengthBestSession
-    .findOne({ userId, exerciseId })
-    .populate('sessionId');
+  let bestSession = await StrengthBestSession.findOne({userId, exerciseId}).populate('sessionId');
   let isUpdated = false;
 
   if (!bestSession) {
-    bestSession = await StrengthBestSession.create({ userId, exerciseId, sessionId });
-    bestSession = await StrengthBestSession
-      .findById(bestSession._id)
-      .populate('sessionId');
+    bestSession = await StrengthBestSession.create({userId, exerciseId, sessionId});
+    bestSession = await StrengthBestSession.findById(bestSession._id).populate('sessionId');
     isUpdated = true;
   } else {
     const cb = bestSession.sessionId;
     const currentWork = (cb.weight || 0) * (cb.totalReps || 0);
     if (
       totalWork > currentWork ||
-      (
-        totalWork === currentWork &&
-        weight > (cb.weight || 0)
-      ) ||
-      (
-        totalWork === currentWork &&
-        weight === (cb.weight || 0) &&
-        totalReps > (cb.totalReps || 0)
-      )
+      (totalWork === currentWork && weight > (cb.weight || 0)) ||
+      (totalWork === currentWork && weight === (cb.weight || 0) && totalReps > (cb.totalReps || 0))
     ) {
       bestSession = await StrengthBestSession.findByIdAndUpdate(
         bestSession._id,
-        { userId, exerciseId, sessionId },
-        { new: true }
+        {userId, exerciseId, sessionId},
+        {new: true}
       ).populate('sessionId');
       isUpdated = true;
     }
   }
 
-  return { bestSession: bestSession.sessionId, updated: isUpdated };
+  return {bestSession: bestSession.sessionId, updated: isUpdated};
 };
 
 const getUserBestSessions = async (userId, query, populateConfig) => {
@@ -263,6 +252,27 @@ async function calculateMonthlyAvgWeight(userId, exerciseId) {
 
   return avgWeightPerMonth;
 }
+const getLastNSessions = async (userId, exerciseId, n = 7) => {
+  if (!userId || !exerciseId) return [];
+
+  if (!mongoose.Types.ObjectId.isValid(exerciseId)) return [];
+
+  const exId = new mongoose.Types.ObjectId(exerciseId);
+
+  const docs = await StrengthSession.find({ userId, exerciseId: exId })
+    .sort({ dateTime: -1 })
+    .limit(Number(n))
+    .lean();
+
+  const ordered = docs.reverse();
+  const sessions = ordered.map((s, index) => ({
+    session: `Session ${index + 1}`,
+    weight: s.weight ?? null,
+  }));
+
+  return sessions;
+};
+
 
 module.exports = {
   logStrengthSession,
@@ -278,4 +288,5 @@ module.exports = {
   calculateMonthlyAvgWeight,
   getSessionByDate,
   getDatedStrengthSessionsMapp,
+  getLastNSessions,
 };
