@@ -259,8 +259,8 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
 
   const exId = new mongoose.Types.ObjectId(exerciseId);
 
-  const docs = await StrengthSession.find({ userId, exerciseId: exId })
-    .sort({ dateTime: -1 })
+  const docs = await StrengthSession.find({userId, exerciseId: exId})
+    .sort({dateTime: -1})
     .limit(Number(n))
     .lean();
 
@@ -272,7 +272,129 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
 
   return sessions;
 };
+const getDailySummary = async (userId, date, view = 'weight', only = false) => {
+  if (!userId) return {date: date?.toISOString?.() || null, totalWeightLifted: 0, totalReps: 0, exercises: []};
 
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  const sessions = await StrengthSession.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    dateTime: {$gte: startOfDay, $lte: endOfDay},
+  })
+    .populate({path: 'exerciseId', select: 'exerciseName primaryCategory'})
+    .lean();
+
+  const exerciseMap = new Map();
+  let totalWeightLifted = 0;
+  let totalReps = 0;
+
+  for (const s of sessions) {
+    const exId = s.exerciseId?._id?.toString() || `no-ex-${s._id.toString()}`;
+    const existing = exerciseMap.get(exId) || {
+      exerciseId: s.exerciseId?._id || null,
+      exerciseName: s.exerciseId?.exerciseName || 'Unknown Exercise',
+      logType: s.logType || 'average',
+      unitSystem: s.unitSystem || 'metric',
+      sessions: [],
+      sets: 0,
+      reps: 0,
+      weight: 0,
+      totalReps: 0,
+      totalWeight: 0,
+      setsDetails: [],
+    };
+
+    existing.sessions.push(s);
+    existing.sets += Number(s.sets || 0);
+    existing.reps = s.reps || existing.reps;
+    existing.weight = s.weight || existing.weight;
+    existing.totalReps += Number(s.totalReps || 0);
+    existing.totalWeight += Number(s.totalWeight || 0);
+
+    if (Array.isArray(s.setsDetails) && s.setsDetails.length) {
+      existing.setsDetails = existing.setsDetails.concat(s.setsDetails);
+    }
+
+    exerciseMap.set(exId, existing);
+
+    totalWeightLifted += Number(s.totalWeight || 0);
+    totalReps += Number(s.totalReps || 0);
+  }
+
+  let exercises = Array.from(exerciseMap.values()).map(ex => {
+    const avgWeight =
+      ex.weight ||
+      (ex.setsDetails.length
+        ? ex.setsDetails.reduce((acc, sd) => acc + (sd.weight || 0), 0) / ex.setsDetails.length
+        : 0);
+
+    if (view === 'bySet') {
+      return {
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        logType: ex.logType,
+        unitSystem: ex.unitSystem,
+        weight: avgWeight,
+        sets: ex.sets,
+        reps: ex.reps,
+        totalReps: ex.totalReps,
+        totalWeight: ex.totalWeight,
+        setsDetails: ex.setsDetails,
+        sessions: ex.sessions.map(s => ({
+          sessionId: s._id,
+          dateTime: s.dateTime,
+          weight: s.weight,
+          sets: s.sets,
+          reps: s.reps,
+          totalReps: s.totalReps,
+          totalWeight: s.totalWeight,
+          logType: s.logType,
+          setsDetails: s.setsDetails || [],
+        })),
+      };
+    } else {
+      return {
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        logType: ex.logType,
+        unitSystem: ex.unitSystem,
+        weight: avgWeight,
+        sets: ex.sets,
+        reps: ex.reps,
+        totalReps: ex.totalReps,
+        totalWeight: ex.totalWeight,
+        setsDetails: undefined,
+        sessions: ex.sessions.map(s => ({
+          sessionId: s._id,
+          dateTime: s.dateTime,
+          weight: s.weight,
+          sets: s.sets,
+          reps: s.reps,
+          totalReps: s.totalReps,
+          totalWeight: s.totalWeight,
+          logType: s.logType,
+        })),
+      };
+    }
+  });
+
+  if (view === 'bySet') {
+    exercises = exercises.filter(e => e.logType === 'bySet');
+  } else if (view === 'weight') {
+    exercises = exercises.filter(e => e.logType !== 'bySet');
+  }
+
+  if (only) {
+  }
+
+  return {
+    totalWeightLifted,
+    exercises,
+  };
+};
 
 module.exports = {
   logStrengthSession,
@@ -289,4 +411,5 @@ module.exports = {
   getSessionByDate,
   getDatedStrengthSessionsMapp,
   getLastNSessions,
+  getDailySummary,
 };

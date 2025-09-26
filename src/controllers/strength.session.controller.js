@@ -239,6 +239,23 @@ const getLastNSessions = catchAsync(async (req, res) => {
   });
 });
 
+const getDailySummary = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const dateStr = req.query.date;
+  const date = dateStr ? new Date(dateStr) : new Date();
+
+  const view = req.query.view === 'bySet' ? 'bySet' : 'weight';
+  const only = req.query.only === 'true';
+
+  const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only);
+
+  res.status(200).json({
+    status: true,
+    data: { dailySummary },
+    message: 'Daily summary fetched successfully',
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
@@ -250,4 +267,5 @@ module.exports = {
   getDatedStrengthMap,
   updateSession,
   getLastNSessions,
+  getDailySummary,
 };
