@@ -251,8 +251,29 @@ const getDailySummary = catchAsync(async (req, res) => {
 
   res.status(200).json({
     status: true,
-    data: { dailySummary },
+    data: {dailySummary},
     message: 'Daily summary fetched successfully',
+  });
+});
+
+const getAllStrengthSessionsMap = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+
+  if (!year || !month || month < 1 || month > 12) {
+    return res.status(400).json({
+      status: false,
+      message: 'Valid year and month (1-12) are required',
+    });
+  }
+
+  const monthlyMap = await strengthSessionService.getAllMonthlyStrengthMap(userId, year, month);
+
+  res.status(200).json({
+    status: true,
+    message: 'Monthly strength sessions map fetched successfully',
+    data: {monthlyMap},
   });
 });
 
@@ -268,4 +289,5 @@ module.exports = {
   updateSession,
   getLastNSessions,
   getDailySummary,
+  getAllStrengthSessionsMap,
 };

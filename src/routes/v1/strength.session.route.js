@@ -28,5 +28,7 @@ router.get(
 router.get('/newmap', firebaseAuth('user'), strengthSessionController.getDatedStrengthMap);
 router.get('/exercises/:exerciseId/lastsessions', firebaseAuth('user'), strengthSessionController.getLastNSessions);
 router.get('/exercises/daily-summary',firebaseAuth('user'), strengthSessionController.getDailySummary);
+router.get('/all-maps', firebaseAuth('user'), strengthSessionController.getAllStrengthSessionsMap);
+
 
 module.exports = router;

@@ -253,9 +253,19 @@ async function calculateMonthlyAvgWeight(userId, exerciseId) {
   return avgWeightPerMonth;
 }
 const getLastNSessions = async (userId, exerciseId, n = 7) => {
-  if (!userId || !exerciseId) return [];
+  if (!userId || !exerciseId) {
+    return Array.from({length: n}, (_, i) => ({
+      session: `Session ${i + 1}`,
+      weight: 0,
+    }));
+  }
 
-  if (!mongoose.Types.ObjectId.isValid(exerciseId)) return [];
+  if (!mongoose.Types.ObjectId.isValid(exerciseId)) {
+    return Array.from({length: n}, (_, i) => ({
+      session: `Session ${i + 1}`,
+      weight: 0,
+    }));
+  }
 
   const exId = new mongoose.Types.ObjectId(exerciseId);
 
@@ -265,20 +275,37 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
     .lean();
 
   const ordered = docs.reverse();
-  const sessions = ordered.map((s, index) => ({
-    session: `Session ${index + 1}`,
-    weight: s.weight ?? null,
-  }));
+
+  const sessions = [];
+  for (let i = 0; i < n; i++) {
+    if (i < ordered.length) {
+      sessions.push({
+        session: `Session ${i + 1}`,
+        weight: ordered[i].weight ?? 0,
+      });
+    } else {
+      sessions.push({
+        session: `Session ${i + 1}`,
+        weight: 0,
+      });
+    }
+  }
 
   return sessions;
 };
 const getDailySummary = async (userId, date, view = 'weight', only = false) => {
-  if (!userId) return {date: date?.toISOString?.() || null, totalWeightLifted: 0, totalReps: 0, exercises: []};
+  if (!userId) {
+    return {
+      totalWeightLifted: 0,
+      totalReps: 0,
+      exercises: [],
+    };
+  }
 
   const startOfDay = new Date(date);
-  startOfDay.setHours(0, 0, 0, 0);
+  startOfDay.setUTCHours(0, 0, 0, 0);
   const endOfDay = new Date(date);
-  endOfDay.setHours(23, 59, 59, 999);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
   const sessions = await StrengthSession.find({
     userId: new mongoose.Types.ObjectId(userId),
@@ -337,7 +364,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
         exerciseName: ex.exerciseName,
         logType: ex.logType,
         unitSystem: ex.unitSystem,
-        weight: avgWeight,
+        weight: ex.totalWeight,
         sets: ex.sets,
         reps: ex.reps,
         totalReps: ex.totalReps,
@@ -361,12 +388,11 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
         exerciseName: ex.exerciseName,
         logType: ex.logType,
         unitSystem: ex.unitSystem,
-        weight: avgWeight,
+        weight: ex.totalWeight,
         sets: ex.sets,
         reps: ex.reps,
         totalReps: ex.totalReps,
         totalWeight: ex.totalWeight,
-        setsDetails: undefined,
         sessions: ex.sessions.map(s => ({
           sessionId: s._id,
           dateTime: s.dateTime,
@@ -387,13 +413,47 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     exercises = exercises.filter(e => e.logType !== 'bySet');
   }
 
-  if (only) {
-  }
+  const filteredTotalWeight = exercises.reduce((sum, ex) => sum + ex.totalWeight, 0);
+  const filteredTotalReps = exercises.reduce((sum, ex) => sum + ex.totalReps, 0);
 
   return {
-    totalWeightLifted,
+    totalWeightLifted: filteredTotalWeight,
+    totalReps: filteredTotalReps,
     exercises,
   };
+};
+const getAllMonthlyStrengthMap = async (userId, year, month) => {
+  const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+  const sessions = await StrengthSession.find({
+    userId,
+    dateTime: {$gte: startDate, $lte: endDate},
+  })
+    .sort({dateTime: 1})
+    .lean();
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dateArray = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const dateString = date.toISOString().split('T')[0];
+    dateArray.push({
+      date: dateString,
+      sessionMarked: false,
+    });
+  }
+
+  sessions.forEach(session => {
+    const dateString = session.dateTime.toISOString().split('T')[0];
+    const dateObject = dateArray.find(item => item.date === dateString);
+    if (dateObject) {
+      dateObject.sessionMarked = true;
+    }
+  });
+
+  return dateArray;
 };
 
 module.exports = {
@@ -412,4 +472,5 @@ module.exports = {
   getDatedStrengthSessionsMapp,
   getLastNSessions,
   getDailySummary,
+  getAllMonthlyStrengthMap,
 };
