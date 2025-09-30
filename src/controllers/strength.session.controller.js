@@ -273,7 +273,7 @@ const getAllStrengthSessionsMap = catchAsync(async (req, res) => {
   res.status(200).json({
     status: true,
     message: 'Monthly strength sessions map fetched successfully',
-    data: {monthlyMap},
+    monthlyMap,
   });
 });
 
