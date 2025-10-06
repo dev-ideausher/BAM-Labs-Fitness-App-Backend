@@ -377,6 +377,47 @@ const getHabitStatistics = async userId => {
     habitsCompletedToday,
   };
 };
+const getTodaysPerformedHabits = async (userId) => {
+  const userHabits = await UserHabit.find({ userId }).populate('habitId', 'name');
+  const userOffsetMinutes =
+    userHabits.length > 0 && typeof userHabits[0].offset === 'number' ? userHabits[0].offset : 0;
+
+  const nowUtc = new Date();
+  const localNow = new Date(nowUtc.getTime() + userOffsetMinutes * 60000);
+  localNow.setHours(0, 0, 0, 0);
+
+  const localStartOfDayUtc = new Date(localNow.getTime() - userOffsetMinutes * 60000);
+  const localEndOfDayUtc = new Date(localStartOfDayUtc.getTime() + 24 * 60 * 60 * 1000);
+
+  const todaysLogs = await UserHabitLog.find({
+    userId,
+    status: 'completed',
+    dateTime: { $gte: localStartOfDayUtc, $lt: localEndOfDayUtc },
+  });
+
+  const habitIdsSet = new Set(todaysLogs.map((l) => l.userHabitId.toString()));
+
+  const performed = [];
+  for (const id of habitIdsSet) {
+    let userHabit = userHabits.find((h) => h._id.toString() === id);
+    if (!userHabit) {
+      userHabit = await UserHabit.findById(id).populate('habitId', 'name');
+    }
+    if (!userHabit) continue;
+
+    const stats = await calculateStats(userHabit);
+
+    performed.push({
+      habitId: userHabit._id,
+      habitName: userHabit.habitId && userHabit.habitId.name ? userHabit.habitId.name : undefined,
+      completionRate: stats.completionRate,
+      bestStreak: stats.bestStreak,
+      completions: stats.completions,
+    });
+  }
+
+  return performed;
+};
 
 module.exports = {
   createUserHabit,
@@ -386,4 +427,5 @@ module.exports = {
   deleteUserHabit,
   restoreHabitStreak,
   getHabitStatistics,
+  getTodaysPerformedHabits,
 };

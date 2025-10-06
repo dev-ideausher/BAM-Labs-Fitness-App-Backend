@@ -242,6 +242,14 @@ const getHabitStats = catchAsync(async (req, res) => {
     stats,
   });
 });
+const getTodaysPerformedHabits = catchAsync(async (req, res) => {
+  const habits = await userHabitService.getTodaysPerformedHabits(req.user._id);
+  res.status(200).json({
+    status: true,
+    message: "Today's performed habits retrieved successfully",
+    habits,
+  });
+});
 
 module.exports = {
   createUserHabit,
@@ -251,4 +259,5 @@ module.exports = {
   deleteUserHabit,
   restoreHabitStreak,
   getHabitStats,
+  getTodaysPerformedHabits,
 };
