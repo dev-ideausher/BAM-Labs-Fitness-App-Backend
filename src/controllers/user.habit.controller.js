@@ -4,6 +4,7 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const {Habit, UserHabit} = require('../models');
 const { cancelHabitNotifications, scheduleHabitNotifications } = require('../Jobs/habitNotifications');
+const mongoose =require("mongoose")
 
 const validateHabitData = reqBody => {
   const {
@@ -19,6 +20,7 @@ const validateHabitData = reqBody => {
     customNotificationCount,
     offset,
     name,
+    category,
   } = reqBody;
 
   // Initialize a new habit object to return
@@ -26,6 +28,7 @@ const validateHabitData = reqBody => {
     userId: reqBody.userId,
     habitId: reqBody.habitId,
     habitName: reqBody.habitName,
+    category,   
     taskType,
     taskDays,
     numberOfTimes,
@@ -39,6 +42,9 @@ const validateHabitData = reqBody => {
      ...(name !== undefined ? { name: name.trim() } : {}),
   };
 
+  if (!category || !mongoose.isValidObjectId(category)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, '`category` is required and must be a valid ObjectId.');
+  }
   if (customNotificationTimes && !Array.isArray(customNotificationTimes)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationTimes must be an array.');
   }
@@ -141,7 +147,7 @@ const getUserHabit = catchAsync(async (req, res) => {
 });
 
 const getUserHabits = catchAsync(async (req, res) => {
-  const habits = await userHabitService.getUserHabits(req.user._id, req.query, [{path: 'habitId'}]);
+  const habits = await userHabitService.getUserHabits(req.user._id, req.query, [{path: 'habitId'}, {path: 'category'}]);
   console.log(habits);
   const enrichedHabits = await Promise.all(
     habits.results.map(async data => {
@@ -236,6 +242,14 @@ const getHabitStats = catchAsync(async (req, res) => {
     stats,
   });
 });
+const getTodaysPerformedHabits = catchAsync(async (req, res) => {
+  const habits = await userHabitService.getTodaysPerformedHabits(req.user._id);
+  res.status(200).json({
+    status: true,
+    message: "Today's performed habits retrieved successfully",
+    habits,
+  });
+});
 
 module.exports = {
   createUserHabit,
@@ -245,4 +259,5 @@ module.exports = {
   deleteUserHabit,
   restoreHabitStreak,
   getHabitStats,
+  getTodaysPerformedHabits,
 };

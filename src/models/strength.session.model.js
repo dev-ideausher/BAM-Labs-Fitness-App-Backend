@@ -17,6 +17,16 @@ const strengthSessionSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    logType: {
+      type: String,
+      enum: ['average', 'bySet'],
+      default: 'average',
+    },
+    unitSystem: {
+      type: String,
+      enum: ['metric', 'imperial'],
+      default: 'metric',
+    },
     weight: {
       type: Number,
       required: true,
@@ -29,6 +39,16 @@ const strengthSessionSchema = new mongoose.Schema(
       type: Number,
       required: false,
     },
+    setsDetails: [
+      new mongoose.Schema(
+        {
+          weight: {type: Number, required: true},
+          reps: {type: Number, required: true},
+          totalWeight: {type: Number, default: 0},
+        },
+        {_id: false}
+      ),
+    ],
     totalReps: {
       type: Number,
       required: false,

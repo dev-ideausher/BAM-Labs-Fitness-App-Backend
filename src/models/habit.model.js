@@ -8,6 +8,11 @@ const habitSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true,
+    },
   },
   {timestamps: true}
 );

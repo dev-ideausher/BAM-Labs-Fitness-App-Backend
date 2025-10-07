@@ -18,7 +18,12 @@ const logSession = catchAsync(async (req, res) => {
       bestSession: data,
     });
   } catch (error) {
-    if (error.message === 'You have already logged a session for this exercise on selected date') {
+    if (
+      error.message === 'You have already logged a session for this exercise on selected date' ||
+      /Minimum \d+ sets required/.test(error.message) ||
+      /Maximum \d+ sets allowed/.test(error.message) ||
+      /Please log (at least|no more than)/.test(error.message)
+    ) {
       return res.status(400).json({status: false, message: error.message});
     }
     res.status(500).json({status: false, message: 'Internal server error', error: error.message});
@@ -135,7 +140,7 @@ const getDatedStrengthMap = catchAsync(async (req, res) => {
 const updateSession = catchAsync(async (req, res) => {
   const {id} = req.params;
 
-  const allowedFields = ['weight', 'sets', 'reps'];
+  const allowedFields = ['weight', 'sets', 'reps', 'setsDetails', 'logType'];
   const updates = Object.keys(req.body);
   const invalidFields = updates.filter(field => !allowedFields.includes(field));
   if (invalidFields.length > 0) {
@@ -170,16 +175,46 @@ const updateSession = catchAsync(async (req, res) => {
     });
   }
 
-  const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
-  const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
-  const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
-
-  const totalReps = safeSets * safeReps;
-  const totalWeight = safeWeight * totalReps;
+  let updatePayload = {};
+  if (req.body.logType === 'bySet' || existingSession.logType === 'bySet') {
+    const details = req.body.setsDetails || existingSession.setsDetails || [];
+    if (details.length < 3) {
+      return res.status(400).json({status: false, message: 'Please log at least 3 sets'});
+    }
+    let totalReps = 0;
+    let totalWeight = 0;
+    let sumWeights = 0;
+    for (const s of details) {
+      const w = Number(s.weight) || 0;
+      const r = Number(s.reps) || 0;
+      const tw = w * r;
+      totalReps += r;
+      totalWeight += tw;
+      sumWeights += w;
+      s.totalWeight = tw;
+    }
+    const avgWeight = sumWeights / details.length;
+    updatePayload = {
+      logType: 'bySet',
+      setsDetails: details,
+      sets: details.length,
+      weight: avgWeight,
+      reps: Math.round(totalReps / details.length),
+      totalReps,
+      totalWeight,
+    };
+  } else {
+    const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
+    const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
+    const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
+    const totalReps = safeSets * safeReps;
+    const totalWeight = safeWeight * totalReps;
+    updatePayload = {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight};
+  }
 
   const updatedSession = await StrengthSession.findOneAndUpdate(
     {_id: id, userId: req.user._id},
-    {$set: {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight}},
+    {$set: updatePayload},
     {new: true}
   );
 
@@ -187,6 +222,58 @@ const updateSession = catchAsync(async (req, res) => {
     status: true,
     message: 'Session updated successfully',
     session: updatedSession,
+  });
+});
+
+const getLastNSessions = catchAsync(async (req, res) => {
+  const n = Number(req.query.n) || 7;
+  const userId = req.user._id;
+  const {exerciseId} = req.params;
+
+  const sessions = await strengthSessionService.getLastNSessions(userId, exerciseId, n);
+
+  res.status(200).json({
+    status: true,
+    data: {sessions},
+    message: `Last ${sessions.length} session(s) fetched successfully`,
+  });
+});
+
+const getDailySummary = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const dateStr = req.query.date;
+  const date = dateStr ? new Date(dateStr) : new Date();
+
+  const view = req.query.view === 'bySet' ? 'bySet' : 'weight';
+  const only = req.query.only === 'true';
+
+  const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only);
+
+  res.status(200).json({
+    status: true,
+    data: {dailySummary},
+    message: 'Daily summary fetched successfully',
+  });
+});
+
+const getAllStrengthSessionsMap = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+
+  if (!year || !month || month < 1 || month > 12) {
+    return res.status(400).json({
+      status: false,
+      message: 'Valid year and month (1-12) are required',
+    });
+  }
+
+  const monthlyMap = await strengthSessionService.getAllMonthlyStrengthMap(userId, year, month);
+
+  res.status(200).json({
+    status: true,
+    message: 'Monthly strength sessions map fetched successfully',
+    monthlyMap,
   });
 });
 
@@ -200,4 +287,7 @@ module.exports = {
   getSessionByDate,
   getDatedStrengthMap,
   updateSession,
+  getLastNSessions,
+  getDailySummary,
+  getAllStrengthSessionsMap,
 };

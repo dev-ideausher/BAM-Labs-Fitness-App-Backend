@@ -9,6 +9,7 @@ router.post('/', firebaseAuth('All'), userHabitController.createUserHabit);
 
 router.get('/', firebaseAuth('All'), userHabitController.getUserHabits);
 router.get('/habbit-stats', firebaseAuth('All'), userHabitController.getHabitStats);
+router.get('/performed/today', firebaseAuth('All'), userHabitController.getTodaysPerformedHabits);
 
 router.get('/:userHabitId', firebaseAuth('All'), userHabitController.getUserHabit);
 

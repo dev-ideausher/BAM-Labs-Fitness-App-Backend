@@ -14,6 +14,7 @@ const userHabitSchma = new mongoose.Schema(
       ref: 'Habit',
       required: true,
     },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true,},
     taskType: {
       type: String,
       enum: ['daily', 'weekly', 'monthly'],

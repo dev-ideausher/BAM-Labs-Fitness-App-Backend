@@ -1,4 +1,4 @@
-const {User} = require('../models');
+const {User, UserPreference} = require('../models');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
 const admin = require('firebase-admin');
@@ -132,14 +132,25 @@ const deleteUserById = async id => {
 };
 
 async function updatePreferencesById(id, newPrefs) {
-  const user = await User.findById(id);
-  user.preferences = {
-    ...user.preferences,
-    ...newPrefs,
-  };
-  // any other fields if you have
-  await user.save();
-  return user;
+  const existing = await UserPreference.findOne({userId: id});
+  if (existing) {
+    existing.language = newPrefs?.language ?? existing.language;
+    existing.unitSystem = newPrefs?.unitSystem ?? existing.unitSystem;
+    existing.logType = newPrefs?.logType ?? existing.logType;
+    await existing.save();
+    return existing;
+  }
+  const created = await UserPreference.create({
+    userId: id,
+    language: newPrefs?.language ?? null,
+    unitSystem: newPrefs?.unitSystem ?? 'metric',
+    logType: newPrefs?.logType ?? 'average',
+  });
+  return created;
+}
+
+async function getPreferencesByUserId(id) {
+  return await UserPreference.findOne({userId: id});
 }
 
 module.exports = {
@@ -148,4 +159,5 @@ module.exports = {
   updateUserById,
   deleteUserById,
   updatePreferencesById,
+  getPreferencesByUserId,
 };

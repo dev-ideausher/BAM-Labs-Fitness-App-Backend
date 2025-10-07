@@ -15,10 +15,11 @@ const getAllUsers = catchAsync(async (req, res) => {
 
 const getUserbyId = catchAsync(async (req, res) => {
   const user = await userService.getUserById(req.user._id);
+  const preferences = await userService.getPreferencesByUserId(req.user._id);
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
-  res.status(200).send({data: user});
+  res.status(200).send({data: {...user.toObject(), preferences}});
 });
 
 const updateUser = catchAsync(async (req, res) => {
@@ -28,8 +29,8 @@ const updateUser = catchAsync(async (req, res) => {
 });
 
 const updatePreferences = catchAsync(async (req, res) => {
-  const updatedUser = await userService.updatePreferencesById(req.user._id, req.body);
-  res.status(200).send({data: updatedUser, message: 'Your preferences are updated'});
+  const updatedPrefs = await userService.updatePreferencesById(req.user._id, req.body.preferences || req.body);
+  res.status(200).send({data: updatedPrefs, message: 'Your preferences are updated'});
 });
 
 const softDeleteUser = catchAsync(async (req, res) => {
