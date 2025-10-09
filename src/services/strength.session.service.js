@@ -323,7 +323,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     const existing = exerciseMap.get(exId) || {
       exerciseId: s.exerciseId?._id || null,
       exerciseName: s.exerciseId?.exerciseName || 'Unknown Exercise',
-      logType: s.logType || 'average',
+      logTypes: new Set(), // Track all logTypes
       unitSystem: s.unitSystem || 'metric',
       sessions: [],
       sets: 0,
@@ -335,6 +335,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     };
 
     existing.sessions.push(s);
+    existing.logTypes.add(s.logType || 'average');
     existing.sets += Number(s.sets || 0);
     existing.reps = s.reps || existing.reps;
     existing.weight = s.weight || existing.weight;
@@ -358,11 +359,13 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
         ? ex.setsDetails.reduce((acc, sd) => acc + (sd.weight || 0), 0) / ex.setsDetails.length
         : 0);
 
-    if (view === 'bySet') {
+    const logType = ex.logTypes.has('bySet') ? 'bySet' : 'average';
+
+    if (view === 'bySet' || view === 'all') {
       return {
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        logType: ex.logType,
+        logType: logType,
         unitSystem: ex.unitSystem,
         weight: ex.totalWeight,
         sets: ex.sets,
@@ -386,7 +389,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
       return {
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        logType: ex.logType,
+        logType: logType,
         unitSystem: ex.unitSystem,
         weight: ex.totalWeight,
         sets: ex.sets,

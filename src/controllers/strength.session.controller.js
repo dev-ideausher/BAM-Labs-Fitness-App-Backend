@@ -244,7 +244,7 @@ const getDailySummary = catchAsync(async (req, res) => {
   const dateStr = req.query.date;
   const date = dateStr ? new Date(dateStr) : new Date();
 
-  const view = req.query.view === 'bySet' ? 'bySet' : 'weight';
+  const view = ['bySet', 'weight', 'all'].includes(req.query.view) ? req.query.view : 'weight';
   const only = req.query.only === 'true';
 
   const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only);
