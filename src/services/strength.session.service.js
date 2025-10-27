@@ -293,6 +293,46 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
 
   return sessions;
 };
+const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7) => {
+  if (!userId || !exercise1 || !exercise2) {
+    return {
+      exercise1: {
+        exerciseId: exercise1,
+        sessions: Array.from({length: n}, (_, i) => ({
+          session: `Session ${i + 1}`,
+          weight: 0,
+        })),
+      },
+      exercise2: {
+        exerciseId: exercise2,
+        sessions: Array.from({length: n}, (_, i) => ({
+          session: `Session ${i + 1}`,
+          weight: 0,
+        })),
+      },
+    };
+  }
+
+  const isValidExercise1 = mongoose.Types.ObjectId.isValid(exercise1);
+  const isValidExercise2 = mongoose.Types.ObjectId.isValid(exercise2);
+
+  const [exercise1Sessions, exercise2Sessions] = await Promise.all([
+    getLastNSessions(userId, exercise1, n),
+    getLastNSessions(userId, exercise2, n),
+  ]);
+
+  return {
+    exercise1: {
+      exerciseId: exercise1,
+      sessions: exercise1Sessions,
+    },
+    exercise2: {
+      exerciseId: exercise2,
+      sessions: exercise2Sessions,
+    },
+  };
+};
+
 const getDailySummary = async (userId, date, view = 'weight', only = false) => {
   if (!userId) {
     return {
@@ -323,7 +363,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     const existing = exerciseMap.get(exId) || {
       exerciseId: s.exerciseId?._id || null,
       exerciseName: s.exerciseId?.exerciseName || 'Unknown Exercise',
-      logType: s.logType || 'average',
+      logTypes: new Set(), // Track all logTypes
       unitSystem: s.unitSystem || 'metric',
       sessions: [],
       sets: 0,
@@ -335,6 +375,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     };
 
     existing.sessions.push(s);
+    existing.logTypes.add(s.logType || 'average');
     existing.sets += Number(s.sets || 0);
     existing.reps = s.reps || existing.reps;
     existing.weight = s.weight || existing.weight;
@@ -358,11 +399,13 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
         ? ex.setsDetails.reduce((acc, sd) => acc + (sd.weight || 0), 0) / ex.setsDetails.length
         : 0);
 
-    if (view === 'bySet') {
+    const logType = ex.logTypes.has('bySet') ? 'bySet' : 'average';
+
+    if (view === 'bySet' || view === 'all') {
       return {
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        logType: ex.logType,
+        logType: logType,
         unitSystem: ex.unitSystem,
         weight: ex.totalWeight,
         sets: ex.sets,
@@ -386,7 +429,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
       return {
         exerciseId: ex.exerciseId,
         exerciseName: ex.exerciseName,
-        logType: ex.logType,
+        logType: logType,
         unitSystem: ex.unitSystem,
         weight: ex.totalWeight,
         sets: ex.sets,
@@ -471,6 +514,7 @@ module.exports = {
   getSessionByDate,
   getDatedStrengthSessionsMapp,
   getLastNSessions,
+  getDualExerciseLastNSessions,
   getDailySummary,
   getAllMonthlyStrengthMap,
 };

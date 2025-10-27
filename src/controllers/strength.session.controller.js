@@ -239,12 +239,33 @@ const getLastNSessions = catchAsync(async (req, res) => {
   });
 });
 
+const getDualExerciseLastNSessions = catchAsync(async (req, res) => {
+  const n = Number(req.query.n) || 7;
+  const userId = req.user._id;
+  const {exercise1, exercise2} = req.query;
+
+  if (!exercise1 || !exercise2) {
+    return res.status(400).json({
+      status: false,
+      message: 'Both exercise1 and exercise2 query parameters are required',
+    });
+  }
+
+  const dualSessions = await strengthSessionService.getDualExerciseLastNSessions(userId, exercise1, exercise2, n);
+
+  res.status(200).json({
+    status: true,
+    data: dualSessions,
+    message: `Last ${n} session(s) for both exercises fetched successfully`,
+  });
+});
+
 const getDailySummary = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const dateStr = req.query.date;
   const date = dateStr ? new Date(dateStr) : new Date();
 
-  const view = req.query.view === 'bySet' ? 'bySet' : 'weight';
+  const view = ['bySet', 'weight', 'all'].includes(req.query.view) ? req.query.view : 'weight';
   const only = req.query.only === 'true';
 
   const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only);
@@ -288,6 +309,7 @@ module.exports = {
   getDatedStrengthMap,
   updateSession,
   getLastNSessions,
+  getDualExerciseLastNSessions,
   getDailySummary,
   getAllStrengthSessionsMap,
 };
