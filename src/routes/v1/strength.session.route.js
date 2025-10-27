@@ -26,6 +26,7 @@ router.get(
   strengthSessionController.getAvgWeightPerMonthByExcercize
 );
 router.get('/newmap', firebaseAuth('user'), strengthSessionController.getDatedStrengthMap);
+router.get('/exercises/dual/lastsessions', firebaseAuth('user'), strengthSessionController.getDualExerciseLastNSessions);
 router.get('/exercises/:exerciseId/lastsessions', firebaseAuth('user'), strengthSessionController.getLastNSessions);
 router.get('/exercises/daily-summary',firebaseAuth('user'), strengthSessionController.getDailySummary);
 router.get('/all-maps', firebaseAuth('user'), strengthSessionController.getAllStrengthSessionsMap);
