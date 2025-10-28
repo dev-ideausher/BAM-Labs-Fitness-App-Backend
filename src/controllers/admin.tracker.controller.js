@@ -39,8 +39,19 @@ const createNewHabit = catchAsync(async (req, res) => {
 
 const updateHabit = catchAsync(async (req, res) => {
   const {id} = req.params;
-  const {name} = req.body;
-  const habit = await trackerService.updateHabit({id, name});
+  const {name, category} = req.body;
+  
+  if (category) {
+    const existingCategory = await Category.findById(category);
+    if (!existingCategory) {
+      return res.status(400).json({
+        status: false,
+        message: 'Invalid category ID',
+      });
+    }
+  }
+  
+  const habit = await trackerService.updateHabit({id, name, category});
   res.status(200).json({
     status: true,
     message: 'Habit updated successfully',

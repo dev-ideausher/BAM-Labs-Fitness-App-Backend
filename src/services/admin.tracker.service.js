@@ -28,8 +28,12 @@ const createNewHabit = async ({name, category}) => {
   return habit;
 };
 
-const updateHabit = async ({id, name}) => {
-  const habit = await Habit.findByIdAndUpdate(id, {name}, {new: true});
+const updateHabit = async ({id, name, category}) => {
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (category) updateData.category = category;
+  
+  const habit = await Habit.findByIdAndUpdate(id, updateData, {new: true});
   return habit;
 };
 

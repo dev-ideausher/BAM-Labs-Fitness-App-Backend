@@ -9,7 +9,7 @@ const router = express.Router();
 router.get('/strength-content', authenticate, trackerController.getStrengthContent);
 router.get('/habits', authenticate, trackerController.getAllHabits);
 router.post('/habits', authenticate, trackerController.createNewHabit);
-router.patch('/habits/:id', authenticate, trackerController.updateHabit);
+router.patch('/habits/:id', authenticate, validate(strengthContentValidation.updateHabitValidation), trackerController.updateHabit);
 router.delete('/habits/:id', authenticate, trackerController.deleteHabit);
 
 router.post('/strength-content', authenticate,validate(strengthContentValidation.createStrengthContentValidation), trackerController.createStrengthContent);
