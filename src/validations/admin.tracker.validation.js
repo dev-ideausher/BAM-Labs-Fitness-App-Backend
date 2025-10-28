@@ -20,7 +20,7 @@ const createStrengthContentValidation = {
                         name: Joi.string().required(),
                         metrices: Joi.array()
                             .items(Joi.string().valid(
-                                "date", "sessionTime", "reps", "sets", "weight", "totalReps"
+                                "date", "sessionTime", "reps", "sets", "weight", "totalReps","totalWeight"
                             ))
                             .required()
                     })
@@ -46,7 +46,7 @@ const updateMuscleExcerciseValidation = {
 
             url: Joi.string().required()
         }).optional(),
-        metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps"))
+        metrices: Joi.array().items(Joi.string().valid("date", "sessionTime", "reps", "sets", "weight", "totalReps","totalWeight"))
     })
 }
 
