@@ -19,6 +19,8 @@ const getAllHabits = async ({page, limit}) => {
   const {filters, options} = getPaginateConfig({page, limit});
   filters['$or'] = [{publicVisibility: true}, {publicVisibility: {$exists: false}}];
 
+  options.populate = 'category::name,_id';
+
   const data = await Habit.paginate(filters, options);
   return data;
 };
