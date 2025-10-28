@@ -42,9 +42,9 @@ const validateHabitData = reqBody => {
      ...(name !== undefined ? { name: name.trim() } : {}),
   };
 
-  if (!category || !mongoose.isValidObjectId(category)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, '`category` is required and must be a valid ObjectId.');
-  }
+  // if (!category || !mongoose.isValidObjectId(category)) {
+  //   throw new ApiError(httpStatus.BAD_REQUEST, '`category` is required and must be a valid ObjectId.');
+  // }
   if (customNotificationTimes && !Array.isArray(customNotificationTimes)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'customNotificationTimes must be an array.');
   }
