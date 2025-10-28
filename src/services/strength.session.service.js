@@ -310,6 +310,8 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
           weight: 0,
         })),
       },
+      minWeight: 0,
+      maxWeight: 0,
     };
   }
 
@@ -321,6 +323,13 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
     getLastNSessions(userId, exercise2, n),
   ]);
 
+  const allWeights = [...exercise1Sessions, ...exercise2Sessions]
+    .map(s => s.weight)
+    .filter(w => w > 0);
+
+  const minWeight = allWeights.length > 0 ? Math.min(...allWeights) : 0;
+  const maxWeight = allWeights.length > 0 ? Math.max(...allWeights) : 0;
+
   return {
     exercise1: {
       exerciseId: exercise1,
@@ -330,6 +339,8 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
       exerciseId: exercise2,
       sessions: exercise2Sessions,
     },
+    minWeight,
+    maxWeight,
   };
 };
 
