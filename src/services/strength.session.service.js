@@ -282,6 +282,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
       sessions.push({
         session: `Session ${i + 1}`,
         weight: ordered[i].weight ?? 0,
+        dateTime: ordered[i].dateTime,
       });
     } else {
       sessions.push({
