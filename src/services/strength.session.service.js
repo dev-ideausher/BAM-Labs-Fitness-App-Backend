@@ -283,6 +283,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
         session: `Session ${i + 1}`,
         weight: ordered[i].weight ?? 0,
         totalWeight: ordered[i].totalWeight ?? 0,
+        unitSystem: ordered[i].unitSystem,
         dateTime: ordered[i].dateTime,
       });
     } else {
