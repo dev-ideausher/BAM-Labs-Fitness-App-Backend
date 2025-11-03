@@ -257,6 +257,9 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
     return Array.from({length: n}, (_, i) => ({
       session: `Session ${i + 1}`,
       weight: 0,
+      totalWeight: 0,
+      unitSystem: null,
+      dateTime: null,
     }));
   }
 
@@ -264,6 +267,9 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
     return Array.from({length: n}, (_, i) => ({
       session: `Session ${i + 1}`,
       weight: 0,
+      totalWeight: 0,
+      unitSystem: null,
+      dateTime: null,
     }));
   }
 
@@ -282,11 +288,17 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
       sessions.push({
         session: `Session ${i + 1}`,
         weight: ordered[i].weight ?? 0,
+        totalWeight: ordered[i].totalWeight ?? 0,
+        unitSystem: ordered[i].unitSystem,
+        dateTime: ordered[i].dateTime,
       });
     } else {
       sessions.push({
         session: `Session ${i + 1}`,
         weight: 0,
+        totalWeight: 0,
+        unitSystem: null,
+        dateTime: null,
       });
     }
   }
@@ -301,6 +313,9 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
         sessions: Array.from({length: n}, (_, i) => ({
           session: `Session ${i + 1}`,
           weight: 0,
+          totalWeight: 0,
+          unitSystem: null,
+          dateTime: null,
         })),
       },
       exercise2: {
@@ -308,6 +323,9 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
         sessions: Array.from({length: n}, (_, i) => ({
           session: `Session ${i + 1}`,
           weight: 0,
+          totalWeight: 0,
+          unitSystem: null,
+          dateTime: null,
         })),
       },
       minWeight: 0,
