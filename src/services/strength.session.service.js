@@ -252,13 +252,33 @@ async function calculateMonthlyAvgWeight(userId, exerciseId) {
 
   return avgWeightPerMonth;
 }
-const getLastNSessions = async (userId, exerciseId, n = 7) => {
+const convertWeight = (weight, fromUnitSystem, toUnitSystem) => {
+  if (weight === 0 || weight === null || weight === undefined || isNaN(weight)) {
+    return weight;
+  }
+  
+  if (!fromUnitSystem || !toUnitSystem || fromUnitSystem === toUnitSystem) {
+    return weight;
+  }
+
+  const KG_TO_LBS = 2.20462;
+  
+  if (fromUnitSystem === 'metric' && toUnitSystem === 'imperial') {
+    return weight * KG_TO_LBS;
+  } else if (fromUnitSystem === 'imperial' && toUnitSystem === 'metric') {
+    return weight / KG_TO_LBS;
+  }
+  
+  return weight;
+};
+
+const getLastNSessions = async (userId, exerciseId, n = 7, requestedUnitSystem = null) => {
   if (!userId || !exerciseId) {
     return Array.from({length: n}, (_, i) => ({
       session: `Session ${i + 1}`,
       weight: 0,
       totalWeight: 0,
-      unitSystem: null,
+      unitSystem: requestedUnitSystem || null,
       dateTime: null,
     }));
   }
@@ -268,7 +288,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
       session: `Session ${i + 1}`,
       weight: 0,
       totalWeight: 0,
-      unitSystem: null,
+      unitSystem: requestedUnitSystem || null,
       dateTime: null,
     }));
   }
@@ -285,11 +305,20 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
   const sessions = [];
   for (let i = 0; i < n; i++) {
     if (i < ordered.length) {
+      const storedUnitSystem = ordered[i].unitSystem || 'metric';
+      const targetUnitSystem = requestedUnitSystem || storedUnitSystem;
+      
+      const originalWeight = ordered[i].weight ?? 0;
+      const originalTotalWeight = ordered[i].totalWeight ?? 0;
+      
+      const convertedWeight = convertWeight(originalWeight, storedUnitSystem, targetUnitSystem);
+      const convertedTotalWeight = convertWeight(originalTotalWeight, storedUnitSystem, targetUnitSystem);
+      
       sessions.push({
         session: `Session ${i + 1}`,
-        weight: ordered[i].weight ?? 0,
-        totalWeight: ordered[i].totalWeight ?? 0,
-        unitSystem: ordered[i].unitSystem,
+        weight: convertedWeight,
+        totalWeight: convertedTotalWeight,
+        unitSystem: targetUnitSystem,
         dateTime: ordered[i].dateTime,
       });
     } else {
@@ -297,7 +326,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
         session: `Session ${i + 1}`,
         weight: 0,
         totalWeight: 0,
-        unitSystem: null,
+        unitSystem: requestedUnitSystem || null,
         dateTime: null,
       });
     }
@@ -305,7 +334,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7) => {
 
   return sessions;
 };
-const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7) => {
+const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7, requestedUnitSystem = null) => {
   if (!userId || !exercise1 || !exercise2) {
     return {
       exercise1: {
@@ -314,7 +343,7 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
           session: `Session ${i + 1}`,
           weight: 0,
           totalWeight: 0,
-          unitSystem: null,
+          unitSystem: requestedUnitSystem || null,
           dateTime: null,
         })),
       },
@@ -324,7 +353,7 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
           session: `Session ${i + 1}`,
           weight: 0,
           totalWeight: 0,
-          unitSystem: null,
+          unitSystem: requestedUnitSystem || null,
           dateTime: null,
         })),
       },
@@ -337,8 +366,8 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7)
   const isValidExercise2 = mongoose.Types.ObjectId.isValid(exercise2);
 
   const [exercise1Sessions, exercise2Sessions] = await Promise.all([
-    getLastNSessions(userId, exercise1, n),
-    getLastNSessions(userId, exercise2, n),
+    getLastNSessions(userId, exercise1, n, requestedUnitSystem),
+    getLastNSessions(userId, exercise2, n, requestedUnitSystem),
   ]);
 
   const allWeights = [...exercise1Sessions, ...exercise2Sessions]

@@ -229,8 +229,9 @@ const getLastNSessions = catchAsync(async (req, res) => {
   const n = Number(req.query.n) || 7;
   const userId = req.user._id;
   const {exerciseId} = req.params;
+  const requestedUnitSystem = req.query.unitSystem;
 
-  const sessions = await strengthSessionService.getLastNSessions(userId, exerciseId, n);
+  const sessions = await strengthSessionService.getLastNSessions(userId, exerciseId, n, requestedUnitSystem);
 
   res.status(200).json({
     status: true,
@@ -243,6 +244,7 @@ const getDualExerciseLastNSessions = catchAsync(async (req, res) => {
   const n = Number(req.query.n) || 7;
   const userId = req.user._id;
   const {exercise1, exercise2} = req.query;
+  const requestedUnitSystem = req.query.unitSystem;
 
   if (!exercise1 || !exercise2) {
     return res.status(400).json({
@@ -251,7 +253,7 @@ const getDualExerciseLastNSessions = catchAsync(async (req, res) => {
     });
   }
 
-  const dualSessions = await strengthSessionService.getDualExerciseLastNSessions(userId, exercise1, exercise2, n);
+  const dualSessions = await strengthSessionService.getDualExerciseLastNSessions(userId, exercise1, exercise2, n, requestedUnitSystem);
 
   res.status(200).json({
     status: true,
