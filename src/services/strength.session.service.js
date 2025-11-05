@@ -396,6 +396,8 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
     return {
       totalWeightLifted: 0,
       totalReps: 0,
+      totalWeightInMetric: 0,
+      totalWeightInImperial: 0,
       exercises: [],
     };
   }
@@ -517,9 +519,30 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
   const filteredTotalWeight = exercises.reduce((sum, ex) => sum + ex.totalWeight, 0);
   const filteredTotalReps = exercises.reduce((sum, ex) => sum + ex.totalReps, 0);
 
+  let filteredTotalWeightInMetric = 0;
+  let filteredTotalWeightInImperial = 0;
+
+  for (const ex of exercises) {
+    const exerciseTotalWeight = Number(ex.totalWeight || 0);
+    const exerciseUnitSystem = ex.unitSystem || 'metric';
+    
+    if (exerciseUnitSystem === 'metric') {
+      filteredTotalWeightInMetric += exerciseTotalWeight;
+      filteredTotalWeightInImperial += convertWeight(exerciseTotalWeight, 'metric', 'imperial');
+    } else if (exerciseUnitSystem === 'imperial') {
+      filteredTotalWeightInImperial += exerciseTotalWeight;
+      filteredTotalWeightInMetric += convertWeight(exerciseTotalWeight, 'imperial', 'metric');
+    } else {
+      filteredTotalWeightInMetric += exerciseTotalWeight;
+      filteredTotalWeightInImperial += convertWeight(exerciseTotalWeight, 'metric', 'imperial');
+    }
+  }
+
   return {
     totalWeightLifted: filteredTotalWeight,
     totalReps: filteredTotalReps,
+    totalWeightInMetric: filteredTotalWeightInMetric,
+    totalWeightInImperial: filteredTotalWeightInImperial,
     exercises,
   };
 };
