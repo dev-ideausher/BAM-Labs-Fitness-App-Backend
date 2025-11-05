@@ -178,8 +178,11 @@ const updateSession = catchAsync(async (req, res) => {
   let updatePayload = {};
   if (req.body.logType === 'bySet' || existingSession.logType === 'bySet') {
     const details = req.body.setsDetails || existingSession.setsDetails || [];
-    if (details.length < 3) {
-      return res.status(400).json({status: false, message: 'Please log at least 3 sets'});
+    if (details.length < 1) {
+      return res.status(400).json({status: false, message: 'Please log at least 1 set'});
+    }
+    if (details.length > 14) {
+      return res.status(400).json({status: false, message: 'Please log no more than 14 sets'});
     }
     let totalReps = 0;
     let totalWeight = 0;
@@ -207,6 +210,12 @@ const updateSession = catchAsync(async (req, res) => {
     const safeWeight = req.body.weight !== undefined ? Number(req.body.weight) : existingSession.weight;
     const safeSets = req.body.sets !== undefined ? Number(req.body.sets) : existingSession.sets;
     const safeReps = req.body.reps !== undefined ? Number(req.body.reps) : existingSession.reps;
+    if (safeSets < 1) {
+      return res.status(400).json({status: false, message: 'Minimum 1 set required'});
+    }
+    if (safeSets > 14) {
+      return res.status(400).json({status: false, message: 'Maximum 14 sets allowed'});
+    }
     const totalReps = safeSets * safeReps;
     const totalWeight = safeWeight * totalReps;
     updatePayload = {weight: safeWeight, sets: safeSets, reps: safeReps, totalReps, totalWeight};
