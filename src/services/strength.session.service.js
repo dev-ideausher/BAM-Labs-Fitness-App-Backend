@@ -3,8 +3,8 @@ const {StrengthSession, StrengthBestSession, UserPreference} = require('../model
 const {getAllData} = require('../utils/getAllData');
 const {getWeeklySessionsMap, getMonthlySessionsMap, getMapsByDate} = require('../utils/getMaps');
 
-const MIN_SETS = 3;
-const MAX_SETS = 7;
+const MIN_SETS = 1;
+const MAX_SETS = 14;
 
 const logStrengthSession = async strengthSession => {
   const {userId, exerciseId, dateTime} = strengthSession;
