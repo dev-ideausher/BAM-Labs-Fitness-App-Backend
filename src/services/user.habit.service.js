@@ -124,7 +124,70 @@ const calculateStats = async userHabit => {
   const completedLogs = logs.filter(log => log.status === 'completed').length;
   const skippedLogs = logs.filter(log => log.status === 'skipped').length;
   const missedLogs = logs.filter(log => log.status === 'missed').length;
-  const completionRate = totalLogs > 0 ? (completedLogs / (completedLogs + missedLogs)) * 100 : 0;
+  
+  let completionRate = 0;
+  if (totalLogs > 0) {
+    if (userHabit.taskType === 'daily' && (userHabit.taskDays === 'everyday' || userHabit.taskDays === 'specific-weekdays')) {
+      const dayCompletions = new Map();
+      
+      logs.filter(log => log.status === 'completed').forEach(log => {
+        const logDate = new Date(log.dateTime);
+        logDate.setHours(0, 0, 0, 0);
+        const dateKey = logDate.toISOString().split('T')[0];
+        
+        if (!dayCompletions.has(dateKey)) {
+          dayCompletions.set(dateKey, {
+            counterForDay: 0,
+            isCompleted: false,
+            isMissed: false,
+          });
+        }
+        const dayData = dayCompletions.get(dateKey);
+        dayData.counterForDay = Math.max(dayData.counterForDay, log.counterForDay || 1);
+        dayData.isCompleted = true;
+      });
+      
+      logs.filter(log => log.status === 'missed').forEach(log => {
+        const logDate = new Date(log.dateTime);
+        logDate.setHours(0, 0, 0, 0);
+        const dateKey = logDate.toISOString().split('T')[0];
+        
+        if (!dayCompletions.has(dateKey)) {
+          dayCompletions.set(dateKey, {
+            counterForDay: 0,
+            isCompleted: false,
+            isMissed: false,
+          });
+        }
+        dayCompletions.get(dateKey).isMissed = true;
+      });
+      
+      let totalDailyCompletion = 0;
+      let totalDays = 0;
+      
+      dayCompletions.forEach(dayData => {
+        totalDays++;
+        if (dayData.isMissed) {
+          totalDailyCompletion += 0;
+        } else if (dayData.isCompleted) {
+          const dayCompletion = Math.min((dayData.counterForDay / userHabit.numberOfTimes) * 100, 100);
+          totalDailyCompletion += dayCompletion;
+        }
+      });
+      
+      completionRate = totalDays > 0 ? totalDailyCompletion / totalDays : 0;
+    } else {
+      const totalActualCompletions = logs
+        .filter(log => log.status === 'completed')
+        .reduce((sum, log) => sum + (log.counterForDay || 1), 0);
+      
+      const totalExpectedCompletions = (completedLogs + missedLogs) * userHabit.numberOfTimes;
+      
+      completionRate = totalExpectedCompletions > 0 
+        ? (totalActualCompletions / totalExpectedCompletions) * 100 
+        : 0;
+    }
+  }
 
   const now = new Date();
   let periodStart = new Date(now);
