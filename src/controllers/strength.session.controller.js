@@ -274,6 +274,8 @@ const getDualExerciseLastNSessions = catchAsync(async (req, res) => {
 const getDailySummary = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const dateStr = req.query.date;
+
+  const timezoneOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
   
   let date;
   if (dateStr) {
@@ -291,7 +293,7 @@ const getDailySummary = catchAsync(async (req, res) => {
   const view = ['bySet', 'weight', 'all'].includes(req.query.view) ? req.query.view : 'weight';
   const only = req.query.only === 'true';
 
-  const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only);
+  const dailySummary = await strengthSessionService.getDailySummary(userId, date, view, only, timezoneOffset);
 
   res.status(200).json({
     status: true,
