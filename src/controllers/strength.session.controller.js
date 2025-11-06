@@ -274,7 +274,19 @@ const getDualExerciseLastNSessions = catchAsync(async (req, res) => {
 const getDailySummary = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const dateStr = req.query.date;
-  const date = dateStr ? new Date(dateStr) : new Date();
+  
+  let date;
+  if (dateStr) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      date = new Date(Date.UTC(year, month - 1, day));
+    } else {
+      date = new Date(dateStr);
+    }
+  } else {
+    const now = new Date();
+    date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  }
 
   const view = ['bySet', 'weight', 'all'].includes(req.query.view) ? req.query.view : 'weight';
   const only = req.query.only === 'true';
