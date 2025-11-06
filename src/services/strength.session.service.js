@@ -391,7 +391,7 @@ const getDualExerciseLastNSessions = async (userId, exercise1, exercise2, n = 7,
   };
 };
 
-const getDailySummary = async (userId, date, view = 'weight', only = false) => {
+const getDailySummary = async (userId, date, view = 'weight', only = false, timezoneOffset = 0) => {
   if (!userId) {
     return {
       totalWeightLifted: 0,
@@ -401,11 +401,15 @@ const getDailySummary = async (userId, date, view = 'weight', only = false) => {
       exercises: [],
     };
   }
+  const offsetMs = timezoneOffset * 60 * 1000;
+  const localDateStart = new Date(date);
+  localDateStart.setUTCHours(0, 0, 0, 0);
+  const startOfDay = new Date(localDateStart.getTime() - offsetMs);
 
-  const startOfDay = new Date(date);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-  const endOfDay = new Date(date);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  const localDateEnd = new Date(date);
+  localDateEnd.setUTCHours(23, 59, 59, 999);
+
+  const endOfDay = new Date(localDateEnd.getTime() - offsetMs);
 
   const sessions = await StrengthSession.find({
     userId: new mongoose.Types.ObjectId(userId),
