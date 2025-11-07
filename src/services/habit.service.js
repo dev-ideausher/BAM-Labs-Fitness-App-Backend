@@ -49,7 +49,7 @@ const getMyHabits = async (userId, query, populateConfig) => {
 };
 
 const getHabitById = async id => {
-  return await Habit.findById(id);
+  return await Habit.findById(id).populate('category');
 };
 
 const updateHabitById = async (id, update) => {
