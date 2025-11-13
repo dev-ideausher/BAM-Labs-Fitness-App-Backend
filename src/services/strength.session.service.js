@@ -305,7 +305,7 @@ const getLastNSessions = async (userId, exerciseId, n = 7, requestedUnitSystem =
   const sessions = [];
   for (let i = 0; i < n; i++) {
     if (i < ordered.length) {
-      const storedUnitSystem = ordered[i].unitSystem || 'metric';
+      const storedUnitSystem = ordered[i].unitSystem || 'imperial';
       const targetUnitSystem = requestedUnitSystem || storedUnitSystem;
       
       const originalWeight = ordered[i].weight ?? 0;
