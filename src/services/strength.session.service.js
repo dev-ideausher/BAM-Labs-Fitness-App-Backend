@@ -272,6 +272,62 @@ const convertWeight = (weight, fromUnitSystem, toUnitSystem) => {
   return weight;
 };
 
+const roundWeightForDisplay = (weight, unitSystem, decimals = null) => {
+  if (weight === 0 || weight === null || weight === undefined || isNaN(weight)) {
+    return weight;
+  }
+  
+  if (decimals === null) {
+    decimals = unitSystem === 'imperial' ? 0 : 1;
+  }
+  
+  const multiplier = Math.pow(10, decimals);
+  return Math.round(weight * multiplier) / multiplier;
+};
+
+const normalizeAndRecalculateSession = (session, targetUnitSystem = null) => {
+  const BASE_UNIT = 'metric';
+  const storedUnitSystem = session.unitSystem || 'metric';
+  const finalUnitSystem = targetUnitSystem || storedUnitSystem;
+  
+  let normalizedWeight = 0;
+  let normalizedTotalWeight = 0;
+  
+  if (session.logType === 'bySet' && Array.isArray(session.setsDetails) && session.setsDetails.length > 0) {
+    let normalizedSumWeights = 0;
+    let normalizedTotal = 0;
+    
+    for (const set of session.setsDetails) {
+      const setWeight = Number(set.weight) || 0;
+      const setReps = Number(set.reps) || 0;
+      
+      const normalizedSetWeight = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
+      
+      const normalizedSetTotalWeight = normalizedSetWeight * setReps;
+      
+      normalizedSumWeights += normalizedSetWeight;
+      normalizedTotal += normalizedSetTotalWeight;
+    }
+    normalizedWeight = normalizedSumWeights / session.setsDetails.length;
+    normalizedTotalWeight = normalizedTotal;
+  } else {
+    const storedWeight = Number(session.weight) || 0;
+    const totalReps = Number(session.totalReps) || 0;
+    
+    normalizedWeight = convertWeight(storedWeight, storedUnitSystem, BASE_UNIT);
+    
+    normalizedTotalWeight = normalizedWeight * totalReps;
+  }
+  const finalWeight = convertWeight(normalizedWeight, BASE_UNIT, finalUnitSystem);
+  const finalTotalWeight = convertWeight(normalizedTotalWeight, BASE_UNIT, finalUnitSystem);
+  
+  return {
+    weight: roundWeightForDisplay(finalWeight, finalUnitSystem),
+    totalWeight: roundWeightForDisplay(finalTotalWeight, finalUnitSystem),
+    unitSystem: finalUnitSystem,
+  };
+};
+
 const getLastNSessions = async (userId, exerciseId, n = 7, requestedUnitSystem = null) => {
   if (!userId || !exerciseId) {
     return Array.from({length: n}, (_, i) => ({
@@ -305,20 +361,15 @@ const getLastNSessions = async (userId, exerciseId, n = 7, requestedUnitSystem =
   const sessions = [];
   for (let i = 0; i < n; i++) {
     if (i < ordered.length) {
-      const storedUnitSystem = ordered[i].unitSystem || 'imperial';
-      const targetUnitSystem = requestedUnitSystem || storedUnitSystem;
+      const targetUnitSystem = requestedUnitSystem || ordered[i].unitSystem || 'metric';
       
-      const originalWeight = ordered[i].weight ?? 0;
-      const originalTotalWeight = ordered[i].totalWeight ?? 0;
-      
-      const convertedWeight = convertWeight(originalWeight, storedUnitSystem, targetUnitSystem);
-      const convertedTotalWeight = convertWeight(originalTotalWeight, storedUnitSystem, targetUnitSystem);
+      const normalized = normalizeAndRecalculateSession(ordered[i], targetUnitSystem);
       
       sessions.push({
         session: `Session ${i + 1}`,
-        weight: convertedWeight,
-        totalWeight: convertedTotalWeight,
-        unitSystem: targetUnitSystem,
+        weight: normalized.weight,
+        totalWeight: normalized.totalWeight,
+        unitSystem: normalized.unitSystem,
         dateTime: ordered[i].dateTime,
       });
     } else {
@@ -419,11 +470,14 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
     .lean();
 
   const exerciseMap = new Map();
-  let totalWeightLifted = 0;
+  let totalWeightLiftedInBaseUnit = 0;
   let totalReps = 0;
 
   for (const s of sessions) {
     const exId = s.exerciseId?._id?.toString() || `no-ex-${s._id.toString()}`;
+    
+    const normalized = normalizeAndRecalculateSession(s, 'metric');
+    
     const existing = exerciseMap.get(exId) || {
       exerciseId: s.exerciseId?._id || null,
       exerciseName: s.exerciseId?.exerciseName || 'Unknown Exercise',
@@ -434,7 +488,7 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
       reps: 0,
       weight: 0,
       totalReps: 0,
-      totalWeight: 0,
+      totalWeightInBaseUnit: 0,
       setsDetails: [],
     };
 
@@ -442,9 +496,9 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
     existing.logTypes.add(s.logType || 'average');
     existing.sets += Number(s.sets || 0);
     existing.reps = s.reps || existing.reps;
-    existing.weight = s.weight || existing.weight;
+    existing.weight = normalized.weight;
     existing.totalReps += Number(s.totalReps || 0);
-    existing.totalWeight += Number(s.totalWeight || 0);
+    existing.totalWeightInBaseUnit += normalized.totalWeight;
 
     if (Array.isArray(s.setsDetails) && s.setsDetails.length) {
       existing.setsDetails = existing.setsDetails.concat(s.setsDetails);
@@ -452,18 +506,29 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
 
     exerciseMap.set(exId, existing);
 
-    totalWeightLifted += Number(s.totalWeight || 0);
+    totalWeightLiftedInBaseUnit += normalized.totalWeight;
     totalReps += Number(s.totalReps || 0);
   }
 
   let exercises = Array.from(exerciseMap.values()).map(ex => {
-    const avgWeight =
-      ex.weight ||
-      (ex.setsDetails.length
-        ? ex.setsDetails.reduce((acc, sd) => acc + (sd.weight || 0), 0) / ex.setsDetails.length
-        : 0);
+    let avgWeight = 0;
+    if (ex.sessions.length > 0) {
+      const normalizedWeights = ex.sessions.map(s => {
+        const normalized = normalizeAndRecalculateSession(s, 'metric');
+        return normalized.weight;
+      }).filter(w => w > 0);
+      
+      if (normalizedWeights.length > 0) {
+        avgWeight = normalizedWeights.reduce((acc, w) => acc + w, 0) / normalizedWeights.length;
+      }
+    }
 
     const logType = ex.logTypes.has('bySet') ? 'bySet' : 'average';
+    
+    const exerciseUnitSystem = ex.unitSystem || 'metric';
+    const totalWeightInBaseUnit = ex.totalWeightInBaseUnit || 0;
+    const roundedAvgWeight = roundWeightForDisplay(avgWeight, exerciseUnitSystem);
+    const roundedTotalWeight = roundWeightForDisplay(totalWeightInBaseUnit, exerciseUnitSystem);
 
     if (view === 'bySet' || view === 'all') {
       return {
@@ -471,23 +536,26 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
         exerciseName: ex.exerciseName,
         logType: logType,
         unitSystem: ex.unitSystem,
-        weight: ex.totalWeight,
+        weight: roundedAvgWeight,
         sets: ex.sets,
         reps: ex.reps,
         totalReps: ex.totalReps,
-        totalWeight: ex.totalWeight,
+        totalWeight: roundedTotalWeight,
         setsDetails: ex.setsDetails,
-        sessions: ex.sessions.map(s => ({
-          sessionId: s._id,
-          dateTime: s.dateTime,
-          weight: s.weight,
-          sets: s.sets,
-          reps: s.reps,
-          totalReps: s.totalReps,
-          totalWeight: s.totalWeight,
-          logType: s.logType,
-          setsDetails: s.setsDetails || [],
-        })),
+        sessions: ex.sessions.map(s => {
+          const sessionNormalized = normalizeAndRecalculateSession(s, s.unitSystem || 'metric');
+          return {
+            sessionId: s._id,
+            dateTime: s.dateTime,
+            weight: sessionNormalized.weight,
+            sets: s.sets,
+            reps: s.reps,
+            totalReps: s.totalReps,
+            totalWeight: sessionNormalized.totalWeight,
+            logType: s.logType,
+            setsDetails: s.setsDetails || [],
+          };
+        }),
       };
     } else {
       return {
@@ -495,21 +563,24 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
         exerciseName: ex.exerciseName,
         logType: logType,
         unitSystem: ex.unitSystem,
-        weight: ex.totalWeight,
+        weight: roundedAvgWeight,
         sets: ex.sets,
         reps: ex.reps,
         totalReps: ex.totalReps,
-        totalWeight: ex.totalWeight,
-        sessions: ex.sessions.map(s => ({
-          sessionId: s._id,
-          dateTime: s.dateTime,
-          weight: s.weight,
-          sets: s.sets,
-          reps: s.reps,
-          totalReps: s.totalReps,
-          totalWeight: s.totalWeight,
-          logType: s.logType,
-        })),
+        totalWeight: roundedTotalWeight,
+        sessions: ex.sessions.map(s => {
+          const sessionNormalized = normalizeAndRecalculateSession(s, s.unitSystem || 'metric');
+          return {
+            sessionId: s._id,
+            dateTime: s.dateTime,
+            weight: sessionNormalized.weight,
+            sets: s.sets,
+            reps: s.reps,
+            totalReps: s.totalReps,
+            totalWeight: sessionNormalized.totalWeight,
+            logType: s.logType,
+          };
+        }),
       };
     }
   });
@@ -520,30 +591,17 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
     exercises = exercises.filter(e => e.logType !== 'bySet');
   }
 
-  const filteredTotalWeight = exercises.reduce((sum, ex) => sum + ex.totalWeight, 0);
+  const filteredTotalWeightInBaseUnit = exercises.reduce((sum, ex) => sum + (ex.totalWeight || 0), 0);
   const filteredTotalReps = exercises.reduce((sum, ex) => sum + ex.totalReps, 0);
 
-  let filteredTotalWeightInMetric = 0;
-  let filteredTotalWeightInImperial = 0;
-
-  for (const ex of exercises) {
-    const exerciseTotalWeight = Number(ex.totalWeight || 0);
-    const exerciseUnitSystem = ex.unitSystem || 'metric';
-    
-    if (exerciseUnitSystem === 'metric') {
-      filteredTotalWeightInMetric += exerciseTotalWeight;
-      filteredTotalWeightInImperial += convertWeight(exerciseTotalWeight, 'metric', 'imperial');
-    } else if (exerciseUnitSystem === 'imperial') {
-      filteredTotalWeightInImperial += exerciseTotalWeight;
-      filteredTotalWeightInMetric += convertWeight(exerciseTotalWeight, 'imperial', 'metric');
-    } else {
-      filteredTotalWeightInMetric += exerciseTotalWeight;
-      filteredTotalWeightInImperial += convertWeight(exerciseTotalWeight, 'metric', 'imperial');
-    }
-  }
+  const filteredTotalWeightInMetric = roundWeightForDisplay(filteredTotalWeightInBaseUnit, 'metric');
+  const filteredTotalWeightInImperial = roundWeightForDisplay(
+    convertWeight(filteredTotalWeightInBaseUnit, 'metric', 'imperial'),
+    'imperial'
+  );
 
   return {
-    totalWeightLifted: filteredTotalWeight,
+    totalWeightLifted: roundWeightForDisplay(filteredTotalWeightInBaseUnit, 'metric'),
     totalReps: filteredTotalReps,
     totalWeightInMetric: filteredTotalWeightInMetric,
     totalWeightInImperial: filteredTotalWeightInImperial,
