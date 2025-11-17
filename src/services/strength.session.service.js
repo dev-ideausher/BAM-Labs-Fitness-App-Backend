@@ -301,7 +301,8 @@ const normalizeAndRecalculateSession = (session, targetUnitSystem = null) => {
       const setWeight = Number(set.weight) || 0;
       const setReps = Number(set.reps) || 0;
       
-      const normalizedSetWeight = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
+      const normalizedSetWeightRaw = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
+      const normalizedSetWeight = roundWeightForDisplay(normalizedSetWeightRaw, BASE_UNIT);
       
       const normalizedSetTotalWeight = normalizedSetWeight * setReps;
       
@@ -314,7 +315,8 @@ const normalizeAndRecalculateSession = (session, targetUnitSystem = null) => {
     const storedWeight = Number(session.weight) || 0;
     const totalReps = Number(session.totalReps) || 0;
     
-    normalizedWeight = convertWeight(storedWeight, storedUnitSystem, BASE_UNIT);
+    const normalizedWeightRaw = convertWeight(storedWeight, storedUnitSystem, BASE_UNIT);
+    normalizedWeight = roundWeightForDisplay(normalizedWeightRaw, BASE_UNIT);
     
     normalizedTotalWeight = normalizedWeight * totalReps;
   }
