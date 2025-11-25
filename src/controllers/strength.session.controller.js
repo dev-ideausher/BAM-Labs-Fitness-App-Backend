@@ -323,6 +323,26 @@ const getAllStrengthSessionsMap = catchAsync(async (req, res) => {
   });
 });
 
+const getPast10DaySessions = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const requestedUnitSystem = req.query.unitSystem || null;
+  const timezoneOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
+
+  const result = await strengthSessionService.getPast10DaySessions(userId, requestedUnitSystem, timezoneOffset);
+
+  res.status(200).json({
+    status: true,
+    message: 'Past 10 day sessions fetched successfully',
+    data: {
+      totalWeightLifted: result.totalWeightLifted,
+      minWeight: result.minWeight,
+      maxWeight: result.maxWeight,
+      sessions: result.sessions,
+      totalSessions: result.sessions.length,
+    },
+  });
+});
+
 module.exports = {
   logSession,
   getMySessions,
@@ -337,4 +357,5 @@ module.exports = {
   getDualExerciseLastNSessions,
   getDailySummary,
   getAllStrengthSessionsMap,
+  getPast10DaySessions,
 };

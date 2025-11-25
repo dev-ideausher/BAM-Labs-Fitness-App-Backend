@@ -643,6 +643,148 @@ const getAllMonthlyStrengthMap = async (userId, year, month) => {
 
   return dateArray;
 };
+const getPast10DaySessions = async (userId, requestedUnitSystem = null, timezoneOffset = 0) => {
+  if (!userId) {
+    return {
+      totalWeightLifted: 0,
+      minWeight: 0,
+      maxWeight: 0,
+      sessions: [],
+    };
+  }
+
+  const offsetMs = timezoneOffset * 60 * 1000;
+  const now = new Date();
+  const endOfToday = new Date(now);
+  endOfToday.setUTCHours(23, 59, 59, 999);
+  const endDate = new Date(endOfToday.getTime() - offsetMs);
+  const startDate = new Date(endDate);
+  startDate.setUTCDate(startDate.getUTCDate() - 30);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  const sessions = await StrengthSession.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    dateTime: {$gte: startDate, $lte: endDate},
+  })
+    .populate({
+      path: 'exerciseId',
+      select: 'exerciseName primaryCategory targetedMuscle',
+      populate: [
+        {path: 'primaryCategory', model: 'PrimaryCategory', select: 'categoryName'},
+        {path: 'targetedMuscle', model: 'TargetedMuscles', select: 'targetedMuscle'},
+      ],
+    })
+    .sort({dateTime: -1})
+    .lean();
+
+  const dayMap = new Map();
+
+  for (const session of sessions) {
+    const sessionDate = new Date(session.dateTime);
+    const dateKey = new Date(Date.UTC(sessionDate.getUTCFullYear(), sessionDate.getUTCMonth(), sessionDate.getUTCDate()));
+    const dateString = dateKey.toISOString().split('T')[0];
+
+    if (!dayMap.has(dateString)) {
+      dayMap.set(dateString, {
+        date: dateString,
+        dateTime: dateKey,
+        exercises: [],
+        totalExercises: 0,
+        totalWeightLifted: 0,
+        totalReps: 0,
+        totalSets: 0,
+      });
+    }
+
+    const daySession = dayMap.get(dateString);
+   
+    const normalized = normalizeAndRecalculateSession(session, 'imperial');
+
+   
+    let convertedSetsDetails = [];
+    if (Array.isArray(session.setsDetails) && session.setsDetails.length > 0) {
+      const storedUnitSystem = session.unitSystem || 'metric';
+      convertedSetsDetails = session.setsDetails.map(set => {
+        const setWeight = Number(set.weight) || 0;
+        const setReps = Number(set.reps) || 0;
+        const convertedWeight = convertWeight(setWeight, storedUnitSystem, 'imperial');
+        const convertedTotalWeight = convertWeight(set.totalWeight || (setWeight * setReps), storedUnitSystem, 'imperial');
+        
+        return {
+          weight: roundWeightForDisplay(convertedWeight, 'imperial'),
+          reps: setReps,
+          totalWeight: roundWeightForDisplay(convertedTotalWeight, 'imperial'),
+        };
+      });
+    }
+
+    const exerciseData = {
+      sessionId: session._id,
+      exerciseId: session.exerciseId?._id || null,
+      exerciseName: session.exerciseId?.exerciseName || 'Unknown Exercise',
+      primaryCategory: session.exerciseId?.primaryCategory || null,
+      targetedMuscle: session.exerciseId?.targetedMuscle || null,
+      dateTime: session.dateTime,
+      logType: session.logType || 'average',
+      unitSystem: 'imperial',
+      weight: normalized.weight,
+      sets: session.sets || 0,
+      reps: session.reps || 0,
+      totalReps: session.totalReps || 0,
+      totalWeight: normalized.totalWeight,
+      setsDetails: convertedSetsDetails,
+    };
+
+    daySession.exercises.push(exerciseData);
+    daySession.totalExercises += 1;
+    daySession.totalWeightLifted += normalized.totalWeight;
+    daySession.totalReps += session.totalReps || 0;
+    daySession.totalSets += session.sets || 0;
+  }
+
+  const daySessionsRaw = Array.from(dayMap.values())
+    .sort((a, b) => b.dateTime - a.dateTime)
+    .slice(0, 10);
+
+ 
+  const unroundedSessionWeights = daySessionsRaw
+    .map(daySession => daySession.totalWeightLifted)
+    .filter(weight => weight > 0);
+
+  const totalWeightLifted = unroundedSessionWeights.length > 0
+    ? roundWeightForDisplay(
+        unroundedSessionWeights.reduce((sum, weight) => sum + weight, 0),
+        'imperial' 
+      )
+    : 0;
+
+  const minWeight = unroundedSessionWeights.length > 0
+    ? roundWeightForDisplay(Math.min(...unroundedSessionWeights), 'imperial') 
+    : 0;
+
+  const maxWeight = unroundedSessionWeights.length > 0
+    ? roundWeightForDisplay(Math.max(...unroundedSessionWeights), 'imperial') 
+    : 0;
+
+ 
+  const daySessions = daySessionsRaw.map((daySession, index) => ({
+    sessionNumber: index + 1,
+    date: daySession.date,
+    dateTime: daySession.dateTime,
+    totalExercises: daySession.totalExercises,
+    totalWeightLifted: roundWeightForDisplay(daySession.totalWeightLifted, 'imperial'),
+    totalReps: daySession.totalReps,
+    totalSets: daySession.totalSets,
+    exercises: daySession.exercises,
+  }));
+
+  return {
+    totalWeightLifted,
+    minWeight,
+    maxWeight,
+    sessions: daySessions,
+  };
+};
 
 module.exports = {
   logStrengthSession,
@@ -662,4 +804,5 @@ module.exports = {
   getDualExerciseLastNSessions,
   getDailySummary,
   getAllMonthlyStrengthMap,
+  getPast10DaySessions,
 };
