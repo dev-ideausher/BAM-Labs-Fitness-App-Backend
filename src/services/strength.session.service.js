@@ -294,56 +294,31 @@ const normalizeAndRecalculateSession = (session, targetUnitSystem = null) => {
   let normalizedTotalWeight = 0;
   
   if (session.logType === 'bySet' && Array.isArray(session.setsDetails) && session.setsDetails.length > 0) {
-    const storedTotalWeight = Number(session.totalWeight) || 0;
+    let normalizedSumWeights = 0;
+    let normalizedTotal = 0;
     
-    // Use stored totalWeight if available (more accurate), otherwise recalculate from setsDetails
-    if (storedTotalWeight > 0) {
-      // Use stored totalWeight and convert to base unit
-      normalizedTotalWeight = convertWeight(storedTotalWeight, storedUnitSystem, BASE_UNIT);
+    for (const set of session.setsDetails) {
+      const setWeight = Number(set.weight) || 0;
+      const setReps = Number(set.reps) || 0;
       
-      // Calculate average weight from setsDetails for display
-      let normalizedSumWeights = 0;
-      for (const set of session.setsDetails) {
-        const setWeight = Number(set.weight) || 0;
-        const normalizedSetWeightRaw = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
-        const normalizedSetWeight = roundWeightForDisplay(normalizedSetWeightRaw, BASE_UNIT);
-        normalizedSumWeights += normalizedSetWeight;
-      }
-      normalizedWeight = normalizedSumWeights / session.setsDetails.length;
-    } else {
-      // Fallback: recalculate from setsDetails if totalWeight not available
-      let normalizedSumWeights = 0;
-      let normalizedTotal = 0;
+      const normalizedSetWeightRaw = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
+      const normalizedSetWeight = roundWeightForDisplay(normalizedSetWeightRaw, BASE_UNIT);
       
-      for (const set of session.setsDetails) {
-        const setWeight = Number(set.weight) || 0;
-        const setReps = Number(set.reps) || 0;
-        
-        const normalizedSetWeightRaw = convertWeight(setWeight, storedUnitSystem, BASE_UNIT);
-        const normalizedSetWeight = roundWeightForDisplay(normalizedSetWeightRaw, BASE_UNIT);
-        
-        const normalizedSetTotalWeight = normalizedSetWeight * setReps;
-        
-        normalizedSumWeights += normalizedSetWeight;
-        normalizedTotal += normalizedSetTotalWeight;
-      }
-      normalizedWeight = normalizedSumWeights / session.setsDetails.length;
-      normalizedTotalWeight = normalizedTotal;
+      const normalizedSetTotalWeight = normalizedSetWeight * setReps;
+      
+      normalizedSumWeights += normalizedSetWeight;
+      normalizedTotal += normalizedSetTotalWeight;
     }
+    normalizedWeight = normalizedSumWeights / session.setsDetails.length;
+    normalizedTotalWeight = normalizedTotal;
   } else {
     const storedWeight = Number(session.weight) || 0;
-    const storedTotalWeight = Number(session.totalWeight) || 0;
     const totalReps = Number(session.totalReps) || 0;
     
     const normalizedWeightRaw = convertWeight(storedWeight, storedUnitSystem, BASE_UNIT);
     normalizedWeight = roundWeightForDisplay(normalizedWeightRaw, BASE_UNIT);
     
-    // Use stored totalWeight if available, otherwise calculate from weight * reps
-    if (storedTotalWeight > 0) {
-      normalizedTotalWeight = convertWeight(storedTotalWeight, storedUnitSystem, BASE_UNIT);
-    } else {
-      normalizedTotalWeight = normalizedWeight * totalReps;
-    }
+    normalizedTotalWeight = normalizedWeight * totalReps;
   }
   const finalWeight = convertWeight(normalizedWeight, BASE_UNIT, finalUnitSystem);
   const finalTotalWeight = convertWeight(normalizedTotalWeight, BASE_UNIT, finalUnitSystem);
@@ -668,7 +643,6 @@ const getAllMonthlyStrengthMap = async (userId, year, month) => {
 
   return dateArray;
 };
-
 const getPast10DaySessions = async (userId, requestedUnitSystem = null, timezoneOffset = 0) => {
   if (!userId) {
     return {
@@ -798,7 +772,7 @@ const getPast10DaySessions = async (userId, requestedUnitSystem = null, timezone
     date: daySession.date,
     dateTime: daySession.dateTime,
     totalExercises: daySession.totalExercises,
-    totalWeightLifted: roundWeightForDisplay(daySession.totalWeightLifted, 'imperial'), // Always in lbs
+    totalWeightLifted: roundWeightForDisplay(daySession.totalWeightLifted, 'imperial'),
     totalReps: daySession.totalReps,
     totalSets: daySession.totalSets,
     exercises: daySession.exercises,
