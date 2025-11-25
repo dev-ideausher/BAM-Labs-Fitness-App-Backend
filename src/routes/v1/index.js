@@ -21,6 +21,7 @@ const contentRoute = require('./content.route');
 const notificationRoute = require('./notification.route');
 const adminDashboardRoute = require('./adminDashboard.route');
 const aichatbotRoute = require('./ai.route');
+const qrRoute = require('./qr.route');
 
 const router = express.Router();
 
@@ -40,6 +41,7 @@ router.use('/user-habit-session', userHabitSessionRoute);
 router.use('/upload', uploadRoute);
 router.use('/admin/dashboard', adminDashboardRoute);
 router.use('/ai', aichatbotRoute);
+router.use('/qr', qrRoute);
 
 
 // admin routes

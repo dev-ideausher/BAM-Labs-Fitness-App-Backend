@@ -20,3 +20,4 @@ exports.adminDashboardController = require('./admindashboard.controller');
 exports.workoutReminderController = require('./workoutReminder.controller');
 exports.aichatbotController = require('./ai.controller');
 exports.subscriptionController = require('./subscription.controller');
+exports.qrController = require('./qr.controller');
