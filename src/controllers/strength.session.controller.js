@@ -3,27 +3,6 @@ const catchAsync = require('../utils/catchAsync');
 const {StrengthExercise, PrimaryCategory} = require('../models');
 const {StrengthSession, StrengthBestSession} = require('../models');
 
-const normalizeTimezoneOffset = (offset) => {
-  if (!offset || offset === 0) return 0;
-  
-  if (offset > 0) {
-    return offset;
-  }
-  
-  const commonBehindUTCOffsets = [300, 360, 420, 480, 540, 600];
-  const absOffset = Math.abs(offset);
-  
-  if (commonBehindUTCOffsets.includes(absOffset)) {
-    return offset;
-  }
-  
-  const unambiguousAheadOfUTCOffsets = [330, 345, 390, 450, 570, 630, 660, 720];
-  if (unambiguousAheadOfUTCOffsets.includes(absOffset)) {
-    return -offset;
-  }
-  return offset;
-};
-
 const logSession = catchAsync(async (req, res) => {
   try {
     const session = await strengthSessionService.logStrengthSession({...req.body, userId: req.user._id});
@@ -296,8 +275,7 @@ const getDailySummary = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const dateStr = req.query.date;
 
-  const rawOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
-  const timezoneOffset = normalizeTimezoneOffset(rawOffset);
+  const timezoneOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
   
   let date;
   if (dateStr) {
@@ -348,8 +326,7 @@ const getAllStrengthSessionsMap = catchAsync(async (req, res) => {
 const getPast10DaySessions = catchAsync(async (req, res) => {
   const userId = req.user._id;
   const requestedUnitSystem = req.query.unitSystem || null;
-  const rawOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
-  const timezoneOffset = normalizeTimezoneOffset(rawOffset);
+  const timezoneOffset = req.query.timezoneOffset ? Number(req.query.timezoneOffset) : 0;
 
   const result = await strengthSessionService.getPast10DaySessions(userId, requestedUnitSystem, timezoneOffset);
 
