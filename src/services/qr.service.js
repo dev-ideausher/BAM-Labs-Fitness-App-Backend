@@ -2,7 +2,7 @@ const { v4: uuidv4 } = require('uuid');
 const admin = require('firebase-admin');
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { QRSession } = require('../models');
+const { QRSession, User } = require('../models');
 const { getAuth, signInWithCustomToken } = require('firebase/auth');
 require('../../firebase-web-config');
 
@@ -97,10 +97,13 @@ async function getQRSessionStatus(sessionId) {
 
 
   if (qrSession.status === 'approved') {
+    const user = await User.findOne({ firebaseUid: qrSession.userId });
+    
     return {
       status: 'approved',
       token: qrSession.customToken,
       userId: qrSession.userId,
+      user: user || null,
     };
   }
 
