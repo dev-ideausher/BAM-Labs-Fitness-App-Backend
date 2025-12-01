@@ -16,3 +16,4 @@ exports.trackerService = require('./admin.tracker.service');
 exports.notificationService = require('./notification.service');
 exports.chatHistoryService = require('./chatHistory.service');
 exports.subscriptionService = require('./subscription.service');
+exports.qrService = require('./qr.service');
