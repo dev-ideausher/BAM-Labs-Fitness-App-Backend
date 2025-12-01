@@ -98,7 +98,7 @@ async function getQRSessionStatus(sessionId) {
 
   if (qrSession.status === 'approved') {
     const user = await User.findOne({ firebaseUid: qrSession.userId });
-    
+
     return {
       status: 'approved',
       token: qrSession.customToken,
