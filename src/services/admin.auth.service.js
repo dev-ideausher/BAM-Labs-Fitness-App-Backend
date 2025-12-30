@@ -15,7 +15,7 @@ const registerAdmin = async ({name, email, password, phone}) => {
     // Check if admin already exists
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
-      throw new ApiError(400, "Admin alrready exists with this email");
+      throw new ApiError(400, "Admin already exists with this email");
     }
     const adminCount = await Admin.countDocuments();
     if (adminCount >= 1 ) {
