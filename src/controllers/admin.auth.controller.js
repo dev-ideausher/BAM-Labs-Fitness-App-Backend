@@ -34,12 +34,12 @@ const forgotPassword = catchAsync(async (req, res) => {
     throw new ApiError(400, "Email is required");
   }
 
-  const user = await Admin.findOne({ email });
-  if (!user) {
+  const admin = await Admin.findOne({ email });
+  if (!admin) {
     throw new ApiError(404, "Admin with this email does not exist");
   }
 
-  const token = jwt.sign({ id: user._id }, jwtSecret, {
+  const token = jwt.sign({ id: admin._id }, jwtSecret, {
     expiresIn: "1h",
   });
 
@@ -73,6 +73,10 @@ const resetPassword = catchAsync(async (req, res) => {
     throw new ApiError(400, "New password and repeat password do not match");
   }
 
+  if (newPassword.length < 6) {
+    throw new ApiError(400, "Password must be at least 6 characters long");
+  }
+
   let decoded;
   try {
     decoded = jwt.verify(token, jwtSecret);
@@ -80,13 +84,13 @@ const resetPassword = catchAsync(async (req, res) => {
     throw new ApiError(400, "Invalid or expired token");
   }
 
-  const user = await Admin.findById(decoded.id);
-  if (!user) {
-    throw new ApiError(404, "User not found");
+  const admin = await Admin.findById(decoded.id);
+  if (!admin) {
+    throw new ApiError(404, "Admin not found");
   }
 
-  user.password = newPassword;
-  await user.save();
+  admin.password = newPassword;
+  await admin.save();
 
   res.status(200).json({
     status: true,
