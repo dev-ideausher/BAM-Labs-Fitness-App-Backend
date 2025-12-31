@@ -529,8 +529,16 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
     
     const exerciseUnitSystem = ex.unitSystem || 'metric';
     const totalWeightInBaseUnit = ex.totalWeightInBaseUnit || 0;
-    const roundedAvgWeight = roundWeightForDisplay(avgWeight, exerciseUnitSystem);
-    const roundedTotalWeight = roundWeightForDisplay(totalWeightInBaseUnit, exerciseUnitSystem);
+    
+    let totalWeightInOriginalUnit = 0;
+    for (const session of ex.sessions) {
+      const sessionNormalized = normalizeAndRecalculateSession(session, session.unitSystem || 'metric');
+      totalWeightInOriginalUnit += sessionNormalized.totalWeight;
+    }
+    
+    const avgWeightInExerciseUnit = convertWeight(avgWeight, 'metric', exerciseUnitSystem);
+    const roundedAvgWeight = roundWeightForDisplay(avgWeightInExerciseUnit, exerciseUnitSystem);
+    const roundedTotalWeight = roundWeightForDisplay(totalWeightInOriginalUnit, exerciseUnitSystem);
 
     if (view === 'bySet' || view === 'all') {
       return {
@@ -593,7 +601,10 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
     exercises = exercises.filter(e => e.logType !== 'bySet');
   }
 
-  const filteredTotalWeightInBaseUnit = exercises.reduce((sum, ex) => sum + (ex.totalWeight || 0), 0);
+  const filteredTotalWeightInBaseUnit = exercises.reduce((sum, ex) => {
+    const weightInMetric = convertWeight(ex.totalWeight || 0, ex.unitSystem || 'metric', 'metric');
+    return sum + weightInMetric;
+  }, 0);
   const filteredTotalReps = exercises.reduce((sum, ex) => sum + ex.totalReps, 0);
 
   const filteredTotalWeightInMetric = roundWeightForDisplay(filteredTotalWeightInBaseUnit, 'metric');
