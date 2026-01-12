@@ -454,21 +454,23 @@ const getDailySummary = async (userId, date, view = 'weight', only = false, time
       exercises: [],
     };
   }
-  // const offsetMs = timezoneOffset * 60 * 1000;
-  // const localDateStart = new Date(date);
-  // localDateStart.setUTCHours(0, 0, 0, 0);
-  // const startOfDay = new Date(localDateStart.getTime() - offsetMs);
 
-  // const localDateEnd = new Date(date);
-  // localDateEnd.setUTCHours(23, 59, 59, 999);
-
-  // const endOfDay = new Date(localDateEnd.getTime() - offsetMs);
   const dateAtMidnightUTC = new Date(date);
   dateAtMidnightUTC.setUTCHours(0, 0, 0, 0);
   
-  const startOfDay = new Date(dateAtMidnightUTC);
-  const endOfDay = new Date(dateAtMidnightUTC);
-  endOfDay.setUTCHours(23, 59, 59, 999);
+  let startOfDay, endOfDay;
+  
+  if (timezoneOffset !== 0) {
+   
+    startOfDay = new Date(dateAtMidnightUTC);
+    endOfDay = new Date(dateAtMidnightUTC);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+  } else {
+   
+    startOfDay = new Date(dateAtMidnightUTC);
+    endOfDay = new Date(dateAtMidnightUTC);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+  }
 
   const sessions = await StrengthSession.find({
     userId: new mongoose.Types.ObjectId(userId),
