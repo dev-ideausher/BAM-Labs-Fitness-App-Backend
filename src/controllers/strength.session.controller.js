@@ -286,8 +286,16 @@ const getDailySummary = catchAsync(async (req, res) => {
       date = new Date(dateStr);
     }
   } else {
+    
     const now = new Date();
-    date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    if (timezoneOffset !== 0) {
+      const offsetMs = timezoneOffset * 60 * 1000;
+     
+      const localNow = new Date(now.getTime() + offsetMs);
+      date = new Date(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate()));
+    } else {
+      date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    }
   }
 
   const view = ['bySet', 'weight', 'all'].includes(req.query.view) ? req.query.view : 'weight';
