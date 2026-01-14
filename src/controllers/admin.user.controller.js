@@ -68,6 +68,7 @@ const getUsers = catchAsync(async (req, res) => {
   const sort = {[options.sortBy]: options.sortOrder === 'asc' ? 1 : -1};
   console.log(filters);
   const users = await userService.getUsers(filters, options);
+  console.log(`[Admin] Fetched ${users.results?.length || 0} users for type: ${type}`);
   res.status(httpStatus.OK).send({data: users, message: 'Users fetched successfully', status: true});
 });
 
